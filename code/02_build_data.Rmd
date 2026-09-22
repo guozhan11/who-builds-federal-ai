@@ -1,14 +1,14 @@
 ---
 title: "02 · Build the analysis data"
 subtitle: "Who Builds Federal AI? · PPOL 5202"
-author: "Nora Zhan"
+author: "Guo (Nora) Zhan"
 output:
   html_document:
     toc: true
     df_print: kable
 ---
 
-This notebook turns the raw files from `01_download_data.Rmd` into two analysis tables and one join key. Every figure in the project is computed in R from these files; there are no per-figure CSVs.
+This notebook turns the raw files from `01_download_data.Rmd` into two analysis tables and one join key. Every figure in the project is computed from these files; the three small tables the proposal's Tableau workbook reads are reshaped from `ai_use_cases.csv` in `03_build_tableau_data.Rmd`.
 
 | File | One row is | Source |
 |---|---|---|
@@ -29,24 +29,25 @@ raw  <- here("data", "raw")
 proc <- here("data", "processed")
 keys <- here("data", "keys")
 dir.create(proc, showWarnings = FALSE)
+dir.create(keys, showWarnings = FALSE)
 ```
 
 # Part A · OMB AI use cases
 
 ## A1. Read the three inventories
 
-Only agency, use case name, and development stage exist in all three years. Topic area and build strategy (who developed the system) exist in 2024 and 2025. Classification, vendor, and the high-impact flag exist only in 2025.
+The 2023 file is UTF-8 and the 2024 file is Windows-1252 (its apostrophes and dashes are Windows curly quotes), so each is read with its own encoding. Only agency, use case name, and development stage exist in all three years. Topic area and build strategy (who developed the system) exist in 2024 and 2025. Classification, vendor, and the high-impact flag exist only in 2025.
 
 ```{r omb-read}
 omb <- file.path(raw, "omb_ai_inventory")
 
 ai23 <- read_csv(file.path(omb, "2023_consolidated_ai_inventory_raw.csv"),
-                 locale = locale(encoding = "latin1"), show_col_types = FALSE) |>
+                 show_col_types = FALSE) |>
   transmute(year = 2023L, agency = Department_Code, use_case_name = Title,
             stage_raw = Development_Stage)
 
 ai24 <- read_csv(file.path(omb, "2024_consolidated_ai_inventory_raw_v2.csv"),
-                 locale = locale(encoding = "latin1"), show_col_types = FALSE,
+                 locale = locale(encoding = "windows-1252"), show_col_types = FALSE,
                  name_repair = "unique_quiet") |>
   transmute(year = 2024L, agency = `Agency Abbreviation`, use_case_name = `Use Case Name`,
             stage_raw = `Stage of Development`,

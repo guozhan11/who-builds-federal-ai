@@ -1,7 +1,7 @@
 ---
 title: "01 · Download raw data"
 subtitle: "Who Builds Federal AI? · PPOL 5202"
-author: "Nora Zhan"
+author: "Guo (Nora) Zhan"
 output:
   html_document:
     toc: true
@@ -9,6 +9,8 @@ output:
 ---
 
 This notebook downloads every raw file the project uses into `data/raw/`. Re-running it is safe: files that already exist are skipped, so a full re-knit only re-queries the OPM file manifests.
+
+The OPM months are fixed at January 2024 through July 2026, the latest release when the proposal was written, so a later re-run downloads the same months and reproduces the proposal's figures. To extend the series, change `last_month` below.
 
 **Sources**
 
@@ -87,15 +89,19 @@ download_opm <- function(type, months) {
 }
 ```
 
-Flows (hires and exits) are downloaded for every month from January 2024, a full year before the change of administration, through the latest release. Headcount snapshots are taken at the end of fiscal years 2023–2025, in December 2024 (the last month before January 20, 2025), and in the latest month.
+Flows (hires and exits) are downloaded for every month from January 2024, a full year before the change of administration, through `last_month`. Headcount snapshots are taken at the end of fiscal years 2023–2025, in December 2024 (the last month before January 20, 2025), and in `last_month`.
+
+OPM keeps revising recent months, and the manifest always points to the current version of each file. A re-download can therefore differ slightly from the proposal's figures even with the months fixed; the manifests saved in `data/raw/opm_fwd/` record the versions actually used.
 
 ```{r opm-download}
-flow_months <- format(seq(as.Date("2024-01-01"), Sys.Date(), by = "month"), "%Y%m")
+last_month <- "202607"
+
+flow_months <- format(seq(as.Date("2024-01-01"), as.Date(paste0(last_month, "01"), "%Y%m%d"),
+                          by = "month"), "%Y%m")
 download_opm("separations", flow_months)
 download_opm("accessions",  flow_months)
 
-latest_emp <- tail(opm_manifest("employment")$yyyymm, 1)
-download_opm("employment", c("202309", "202409", "202412", "202509", latest_emp))
+download_opm("employment", c("202309", "202409", "202412", "202509", last_month))
 
 sapply(c("employment", "separations", "accessions"),
        \(d) length(list.files(file.path(opm_dir, d))))

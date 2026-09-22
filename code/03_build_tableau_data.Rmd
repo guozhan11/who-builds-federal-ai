@@ -1,0 +1,202 @@
+---
+title: "03 · Build the Tableau chart data"
+subtitle: "Who Builds Federal AI? · PPOL 5202"
+author: "Guo (Nora) Zhan"
+output:
+  html_document:
+    toc: true
+    df_print: kable
+---
+
+This notebook reshapes `data/processed/ai_use_cases.csv` into the three chart-specific tables that the proposal's Tableau workbook (`proposal/prototypes_tableau_native.twbx`) reads. They are derived tables, not new data: every number in them is a count of rows in `ai_use_cases.csv`.
+
+| File | Prototype | One row is |
+|---|---|---|
+| `proposal/tableau_data/make_or_buy.csv` | 1 · 100% stacked bar | one group (all agencies, one type of AI, or one agency) × one build strategy |
+| `proposal/tableau_data/agency_topics.csv` | 2 · heatmap | one agency × one topic area |
+| `proposal/tableau_data/vendor_concentration.csv` | 3 · dot plot | one vendor |
+
+All three share one set of columns so they have the same field types in Tableau. `row_label`, `column_label`, and `category` are the display labels; the `*_order` columns fix the sort order. Columns a chart does not use are left blank. The workbook itself was built by hand in Tableau from these files.
+
+```{r setup, message = FALSE}
+library(tidyverse)
+library(here)
+
+out <- here("proposal", "tableau_data")
+dir.create(out, recursive = TRUE, showWarnings = FALSE)
+
+use_cases <- read_csv(here("data", "processed", "ai_use_cases.csv"),
+                      col_types = cols(.default = col_character(), year = col_integer()))
+
+chart_columns <- c("chart", "panel", "panel_order", "row_label", "row_order", "column_label",
+                   "column_order", "category", "category_order", "count", "share", "secondary",
+                   "mark_label")
+
+# Fill the columns a chart does not use with blanks, and put all columns in a fixed order
+as_chart_table <- \(df) {
+  for (col in setdiff(chart_columns, names(df))) df[[col]] <- NA
+  select(df, all_of(chart_columns))
+}
+```
+
+## 1. Make or buy (Prototype 1)
+
+2025 pilot and deployed use cases with a build strategy (1,444 of 1,480; the other 36 are blank). Three panels: all agencies; each type of AI with at least 30 cases (excluding "Other"); each agency with at least 20 cases. Within each panel, groups are sorted by the share built in-house, highest first, so the rows run from mostly built to mostly bought. Shares under 9% are not labeled, because the label does not fit inside the bar.
+
+```{r make-or-buy}
+build_levels <- c("Vendor" = "Purchased from a vendor",
+                  "Vendor and in-house" = "Vendor and in-house",
+                  "In-house" = "Built in-house")
+
+built <- use_cases |>
+  filter(year == 2025, stage %in% c("Pilot", "Deployed"), !is.na(build)) |>
+  mutate(category = factor(build_levels[build], levels = build_levels))
+
+build_shares <- \(df, panel, panel_order, group, min_n) {
+  df |>
+    filter(!is.na({{ group }})) |>
+    count(group = {{ group }}, category, .drop = FALSE) |>
+    group_by(group) |>
+    mutate(total = sum(n)) |>
+    filter(total >= min_n) |>
+    mutate(share = n / total,
+           in_house_share = share[category == "Built in-house"]) |>
+    ungroup() |>
+    mutate(panel = panel, panel_order = panel_order,
+           row_order = dense_rank(desc(in_house_share)))
+}
+
+make_or_buy <- bind_rows(
+  build_shares(mutate(built, all = "All agencies"), "All", 1L, all, 0),
+  build_shares(filter(built, classification != "Other"), "By type of AI", 2L, classification, 30),
+  build_shares(built, "By agency (20+ cases)", 3L, agency, 20)
+) |>
+  transmute(chart = "Make or Buy", panel, panel_order,
+            row_label = sprintf("%s  (%s)", group, formatC(total, big.mark = ",", format = "d")), row_order,
+            category_order = as.integer(category), category = as.character(category),
+            count = n, share, secondary = total,
+            mark_label = if_else(share >= 0.09, sprintf("%.0f%%", 100 * share), NA)) |>
+  arrange(panel_order, row_order, category_order) |>
+  as_chart_table()
+
+# Check against the figures quoted in the proposal
+stopifnot(sum(make_or_buy$count[make_or_buy$panel == "All"]) == 1444)
+stopifnot(any(duplicated(select(make_or_buy, panel, row_order, category))) == FALSE)
+
+write_csv(make_or_buy, file.path(out, "make_or_buy.csv"), na = "")
+make_or_buy |>
+  select(panel, row_label, category, share) |>
+  mutate(share = round(100 * share)) |>
+  pivot_wider(names_from = category, values_from = share)
+```
+
+## 2. Agency topics (Prototype 2)
+
+2025 use cases with a topic area, for agencies with at least 50 such cases. The ten most common topics are kept; the rest, and every OMB category that starts with "Other", are grouped as "Other". Two 2025 spellings of the administrative category are merged. Topic names are shortened so the column headers fit. Agencies are sorted by number of cases (the workbook reverses this, largest at the top); ties keep the order in which the agency first appears in the inventory.
+
+```{r agency-topics}
+short_topic <- c("Admin Functions" = "Admin", "Energy and Environment" = "Energy & Env",
+                 "Health and Medical" = "Health & Med", "Law Enforcement" = "Law Enforce",
+                 "Procurement and Finance Mgmt" = "Procure", "Transportation" = "Transit")
+
+topics <- use_cases |>
+  filter(year == 2025, !is.na(topic_area)) |>
+  mutate(topic = case_when(topic_area == "Administrative functions" ~ "Admin Functions",
+                           str_starts(topic_area, "Other")          ~ "Other",
+                           .default = topic_area)) |>
+  add_count(agency, name = "total") |>
+  filter(total >= 50)
+
+top_topics <- topics |>
+  count(topic, sort = TRUE) |>
+  slice_head(n = 10) |>
+  filter(topic != "Other") |>
+  pull(topic)
+
+topics <- mutate(topics, topic = if_else(topic %in% top_topics, topic, "Other"))
+
+topic_order <- topics |>
+  mutate(first_seen = row_number()) |>
+  filter(topic != "Other") |>
+  summarise(n = n(), first_seen = min(first_seen), .by = topic) |>
+  arrange(desc(n), first_seen) |>
+  pull(topic) |>
+  c("Other")
+
+agency_order <- topics |>
+  mutate(first_seen = row_number()) |>
+  summarise(total = n(), first_seen = min(first_seen), .by = agency) |>
+  arrange(total, first_seen) |>
+  mutate(row_order = row_number())
+
+agency_topics <- topics |>
+  mutate(topic = factor(topic, levels = topic_order)) |>
+  count(agency, topic, .drop = FALSE) |>
+  inner_join(agency_order, by = "agency") |>
+  transmute(chart = "Agency Topics",
+            row_label = sprintf("%s (%s)", agency, formatC(total, big.mark = ",", format = "d")), row_order,
+            column_label = coalesce(short_topic[as.character(topic)], as.character(topic)),
+            column_order = as.integer(topic),
+            count = n, share = n / total, secondary = total,
+            mark_label = if_else(n > 0, as.character(n), NA)) |>
+  arrange(row_order, column_order) |>
+  as_chart_table()
+
+stopifnot(agency_topics$count[agency_topics$row_label == "NASA (424)" &
+                              agency_topics$column_label == "Science"] == 387)
+
+write_csv(agency_topics, file.path(out, "agency_topics.csv"), na = "")
+agency_topics |>
+  select(row_label, column_label, count) |>
+  pivot_wider(names_from = column_label, values_from = count)
+```
+
+## 3. Vendor concentration (Prototype 3)
+
+2025 use cases that name a vendor, at any development stage. `vendor_name` is free text and often lists several firms, so it is split on semicolons, commas, slashes, line breaks, and the word "and". Each piece is matched to a firm by the patterns below, which also merge product names into their firm (Copilot and Azure into Microsoft, ChatGPT into OpenAI). The first pattern that matches wins, and a firm is counted once per use case. The chart shows the 15 firms named in the most use cases, and the number of agencies naming each.
+
+```{r vendor-concentration}
+vendor_patterns <- c(
+  "microsoft|azure|copilot" = "Microsoft",    "google|gemini" = "Google",
+  "amazon|aws" = "Amazon Web Services",       "openai|chatgpt" = "OpenAI",
+  "anthropic|claude" = "Anthropic",           "palantir" = "Palantir",
+  "deloitte" = "Deloitte",                    "ibm" = "IBM",
+  "servicenow" = "ServiceNow",                "thomson reuters|westlaw" = "Thomson Reuters",
+  "lexisnexis" = "LexisNexis",                "esri" = "Esri",
+  "accenture" = "Accenture",                  "booz allen" = "Booz Allen Hamilton",
+  "leidos" = "Leidos",                        "saic" = "SAIC",
+  "guidehouse" = "Guidehouse",                "adobe" = "Adobe",
+  "salesforce" = "Salesforce",                "oracle" = "Oracle",
+  "nvidia" = "NVIDIA",                        "axon" = "Axon",
+  "sas\\b" = "SAS",                           "databricks" = "Databricks",
+  "snowflake" = "Snowflake")
+
+match_vendor <- \(piece) {
+  hit <- map_lgl(names(vendor_patterns), \(p) str_detect(piece, p))
+  if (any(hit)) vendor_patterns[[which(hit)[1]]] else NA_character_
+}
+
+vendor_mentions <- use_cases |>
+  filter(year == 2025, !is.na(vendor_name)) |>
+  mutate(piece = str_split(str_to_lower(vendor_name), ";|,|/|\\band\\b|\n")) |>
+  unnest(piece) |>
+  mutate(vendor = map_chr(str_squish(piece), match_vendor)) |>
+  filter(!is.na(vendor)) |>
+  distinct(record_id, agency, vendor)
+
+vendor_concentration <- vendor_mentions |>
+  summarise(count = n(), secondary = n_distinct(agency), .by = vendor) |>
+  arrange(desc(count), vendor) |>
+  slice_head(n = 15) |>
+  transmute(chart = "Vendor Concentration", row_label = vendor, row_order = row_number(),
+            count, secondary,
+            mark_label = sprintf("%d cases · %d %s", count, secondary,
+                                 if_else(secondary == 1, "agency", "agencies"))) |>
+  as_chart_table()
+
+stopifnot(with(vendor_concentration, count[row_label == "Microsoft"] == 133 &&
+                                     secondary[row_label == "Microsoft"] == 21))
+
+write_csv(vendor_concentration, file.path(out, "vendor_concentration.csv"), na = "")
+select(vendor_concentration, vendor = row_label, use_cases = count, agencies = secondary)
+```

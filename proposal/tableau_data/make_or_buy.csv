@@ -1,61 +1,61 @@
-"chart","panel","panel_order","row_label","row_order","column_label","column_order","category","category_order","count","share","secondary","mark_label"
-"Make or Buy","All",1,"All agencies  (1,444)",1,,,"Purchased from a vendor",1,552,0.382271468144044,1444,"38%"
-"Make or Buy","All",1,"All agencies  (1,444)",1,,,"Vendor and in-house",2,387,0.268005540166205,1444,"27%"
-"Make or Buy","All",1,"All agencies  (1,444)",1,,,"Built in-house",3,505,0.349722991689751,1444,"35%"
-"Make or Buy","By type of AI",2,"Classical ML  (516)",1,,,"Purchased from a vendor",1,147,0.284883720930233,516,"28%"
-"Make or Buy","By type of AI",2,"Classical ML  (516)",1,,,"Vendor and in-house",2,105,0.203488372093023,516,"20%"
-"Make or Buy","By type of AI",2,"Classical ML  (516)",1,,,"Built in-house",3,264,0.511627906976744,516,"51%"
-"Make or Buy","By type of AI",2,"Computer Vision  (189)",5,,,"Purchased from a vendor",1,128,0.677248677248677,189,"68%"
-"Make or Buy","By type of AI",2,"Computer Vision  (189)",5,,,"Vendor and in-house",2,36,0.19047619047619,189,"19%"
-"Make or Buy","By type of AI",2,"Computer Vision  (189)",5,,,"Built in-house",3,25,0.132275132275132,189,"13%"
-"Make or Buy","By type of AI",2,"NLP  (254)",3,,,"Purchased from a vendor",1,77,0.303149606299213,254,"30%"
-"Make or Buy","By type of AI",2,"NLP  (254)",3,,,"Vendor and in-house",2,82,0.322834645669291,254,"32%"
-"Make or Buy","By type of AI",2,"NLP  (254)",3,,,"Built in-house",3,95,0.374015748031496,254,"37%"
-"Make or Buy","By type of AI",2,"Generative AI  (396)",4,,,"Purchased from a vendor",1,179,0.452020202020202,396,"45%"
-"Make or Buy","By type of AI",2,"Generative AI  (396)",4,,,"Vendor and in-house",2,127,0.320707070707071,396,"32%"
-"Make or Buy","By type of AI",2,"Generative AI  (396)",4,,,"Built in-house",3,90,0.227272727272727,396,"23%"
-"Make or Buy","By type of AI",2,"Agentic AI  (38)",2,,,"Purchased from a vendor",1,10,0.263157894736842,38,"26%"
-"Make or Buy","By type of AI",2,"Agentic AI  (38)",2,,,"Vendor and in-house",2,13,0.342105263157895,38,"34%"
-"Make or Buy","By type of AI",2,"Agentic AI  (38)",2,,,"Built in-house",3,15,0.394736842105263,38,"39%"
-"Make or Buy","By agency (20+ cases)",3,"DHS  (118)",12,,,"Purchased from a vendor",1,44,0.372881355932203,118,"37%"
-"Make or Buy","By agency (20+ cases)",3,"DHS  (118)",12,,,"Vendor and in-house",2,51,0.432203389830508,118,"43%"
-"Make or Buy","By agency (20+ cases)",3,"DHS  (118)",12,,,"Built in-house",3,23,0.194915254237288,118,"19%"
-"Make or Buy","By agency (20+ cases)",3,"DOE  (176)",10,,,"Purchased from a vendor",1,78,0.443181818181818,176,"44%"
-"Make or Buy","By agency (20+ cases)",3,"DOE  (176)",10,,,"Vendor and in-house",2,49,0.278409090909091,176,"28%"
-"Make or Buy","By agency (20+ cases)",3,"DOE  (176)",10,,,"Built in-house",3,49,0.278409090909091,176,"28%"
-"Make or Buy","By agency (20+ cases)",3,"DOI  (129)",3,,,"Purchased from a vendor",1,14,0.108527131782946,129,"11%"
-"Make or Buy","By agency (20+ cases)",3,"DOI  (129)",3,,,"Vendor and in-house",2,7,0.0542635658914729,129,""
-"Make or Buy","By agency (20+ cases)",3,"DOI  (129)",3,,,"Built in-house",3,108,0.837209302325581,129,"84%"
-"Make or Buy","By agency (20+ cases)",3,"DOJ  (188)",14,,,"Purchased from a vendor",1,153,0.813829787234043,188,"81%"
-"Make or Buy","By agency (20+ cases)",3,"DOJ  (188)",14,,,"Vendor and in-house",2,21,0.111702127659574,188,"11%"
-"Make or Buy","By agency (20+ cases)",3,"DOJ  (188)",14,,,"Built in-house",3,14,0.074468085106383,188,""
-"Make or Buy","By agency (20+ cases)",3,"DOL  (23)",5,,,"Purchased from a vendor",1,3,0.130434782608696,23,"13%"
-"Make or Buy","By agency (20+ cases)",3,"DOL  (23)",5,,,"Vendor and in-house",2,8,0.347826086956522,23,"35%"
-"Make or Buy","By agency (20+ cases)",3,"DOL  (23)",5,,,"Built in-house",3,12,0.521739130434783,23,"52%"
-"Make or Buy","By agency (20+ cases)",3,"FRB  (23)",1,,,"Purchased from a vendor",1,2,0.0869565217391304,23,""
-"Make or Buy","By agency (20+ cases)",3,"FRB  (23)",1,,,"Vendor and in-house",2,0,0,23,""
-"Make or Buy","By agency (20+ cases)",3,"FRB  (23)",1,,,"Built in-house",3,21,0.91304347826087,23,"91%"
-"Make or Buy","By agency (20+ cases)",3,"HHS  (255)",8,,,"Purchased from a vendor",1,51,0.2,255,"20%"
-"Make or Buy","By agency (20+ cases)",3,"HHS  (255)",8,,,"Vendor and in-house",2,123,0.482352941176471,255,"48%"
-"Make or Buy","By agency (20+ cases)",3,"HHS  (255)",8,,,"Built in-house",3,81,0.317647058823529,255,"32%"
-"Make or Buy","By agency (20+ cases)",3,"NASA  (47)",2,,,"Purchased from a vendor",1,1,0.0212765957446809,47,""
-"Make or Buy","By agency (20+ cases)",3,"NASA  (47)",2,,,"Vendor and in-house",2,5,0.106382978723404,47,"11%"
-"Make or Buy","By agency (20+ cases)",3,"NASA  (47)",2,,,"Built in-house",3,41,0.872340425531915,47,"87%"
-"Make or Buy","By agency (20+ cases)",3,"SEC  (25)",11,,,"Purchased from a vendor",1,8,0.32,25,"32%"
-"Make or Buy","By agency (20+ cases)",3,"SEC  (25)",11,,,"Vendor and in-house",2,12,0.48,25,"48%"
-"Make or Buy","By agency (20+ cases)",3,"SEC  (25)",11,,,"Built in-house",3,5,0.2,25,"20%"
-"Make or Buy","By agency (20+ cases)",3,"SSA  (31)",7,,,"Purchased from a vendor",1,15,0.483870967741935,31,"48%"
-"Make or Buy","By agency (20+ cases)",3,"SSA  (31)",7,,,"Vendor and in-house",2,6,0.193548387096774,31,"19%"
-"Make or Buy","By agency (20+ cases)",3,"SSA  (31)",7,,,"Built in-house",3,10,0.32258064516129,31,"32%"
-"Make or Buy","By agency (20+ cases)",3,"STATE  (28)",9,,,"Purchased from a vendor",1,5,0.178571428571429,28,"18%"
-"Make or Buy","By agency (20+ cases)",3,"STATE  (28)",9,,,"Vendor and in-house",2,15,0.535714285714286,28,"54%"
-"Make or Buy","By agency (20+ cases)",3,"STATE  (28)",9,,,"Built in-house",3,8,0.285714285714286,28,"29%"
-"Make or Buy","By agency (20+ cases)",3,"TREAS  (48)",6,,,"Purchased from a vendor",1,13,0.270833333333333,48,"27%"
-"Make or Buy","By agency (20+ cases)",3,"TREAS  (48)",6,,,"Vendor and in-house",2,16,0.333333333333333,48,"33%"
-"Make or Buy","By agency (20+ cases)",3,"TREAS  (48)",6,,,"Built in-house",3,19,0.395833333333333,48,"40%"
-"Make or Buy","By agency (20+ cases)",3,"USDA  (86)",4,,,"Purchased from a vendor",1,11,0.127906976744186,86,"13%"
-"Make or Buy","By agency (20+ cases)",3,"USDA  (86)",4,,,"Vendor and in-house",2,23,0.267441860465116,86,"27%"
-"Make or Buy","By agency (20+ cases)",3,"USDA  (86)",4,,,"Built in-house",3,52,0.604651162790698,86,"60%"
-"Make or Buy","By agency (20+ cases)",3,"VA  (159)",13,,,"Purchased from a vendor",1,106,0.666666666666667,159,"67%"
-"Make or Buy","By agency (20+ cases)",3,"VA  (159)",13,,,"Vendor and in-house",2,23,0.144654088050314,159,"14%"
-"Make or Buy","By agency (20+ cases)",3,"VA  (159)",13,,,"Built in-house",3,30,0.188679245283019,159,"19%"
+chart,panel,panel_order,row_label,row_order,column_label,column_order,category,category_order,count,share,secondary,mark_label
+Make or Buy,All,1,"All agencies  (1,444)",1,,,Purchased from a vendor,1,552,0.38227146814404434,1444,38%
+Make or Buy,All,1,"All agencies  (1,444)",1,,,Vendor and in-house,2,387,0.268005540166205,1444,27%
+Make or Buy,All,1,"All agencies  (1,444)",1,,,Built in-house,3,505,0.3497229916897507,1444,35%
+Make or Buy,By type of AI,2,Classical ML  (516),1,,,Purchased from a vendor,1,147,0.28488372093023256,516,28%
+Make or Buy,By type of AI,2,Classical ML  (516),1,,,Vendor and in-house,2,105,0.20348837209302326,516,20%
+Make or Buy,By type of AI,2,Classical ML  (516),1,,,Built in-house,3,264,0.5116279069767442,516,51%
+Make or Buy,By type of AI,2,Agentic AI  (38),2,,,Purchased from a vendor,1,10,0.2631578947368421,38,26%
+Make or Buy,By type of AI,2,Agentic AI  (38),2,,,Vendor and in-house,2,13,0.34210526315789475,38,34%
+Make or Buy,By type of AI,2,Agentic AI  (38),2,,,Built in-house,3,15,0.39473684210526316,38,39%
+Make or Buy,By type of AI,2,NLP  (254),3,,,Purchased from a vendor,1,77,0.3031496062992126,254,30%
+Make or Buy,By type of AI,2,NLP  (254),3,,,Vendor and in-house,2,82,0.3228346456692913,254,32%
+Make or Buy,By type of AI,2,NLP  (254),3,,,Built in-house,3,95,0.37401574803149606,254,37%
+Make or Buy,By type of AI,2,Generative AI  (396),4,,,Purchased from a vendor,1,179,0.45202020202020204,396,45%
+Make or Buy,By type of AI,2,Generative AI  (396),4,,,Vendor and in-house,2,127,0.3207070707070707,396,32%
+Make or Buy,By type of AI,2,Generative AI  (396),4,,,Built in-house,3,90,0.22727272727272727,396,23%
+Make or Buy,By type of AI,2,Computer Vision  (189),5,,,Purchased from a vendor,1,128,0.6772486772486772,189,68%
+Make or Buy,By type of AI,2,Computer Vision  (189),5,,,Vendor and in-house,2,36,0.19047619047619047,189,19%
+Make or Buy,By type of AI,2,Computer Vision  (189),5,,,Built in-house,3,25,0.13227513227513227,189,13%
+Make or Buy,By agency (20+ cases),3,FRB  (23),1,,,Purchased from a vendor,1,2,0.08695652173913043,23,
+Make or Buy,By agency (20+ cases),3,FRB  (23),1,,,Vendor and in-house,2,0,0,23,
+Make or Buy,By agency (20+ cases),3,FRB  (23),1,,,Built in-house,3,21,0.9130434782608695,23,91%
+Make or Buy,By agency (20+ cases),3,NASA  (47),2,,,Purchased from a vendor,1,1,0.02127659574468085,47,
+Make or Buy,By agency (20+ cases),3,NASA  (47),2,,,Vendor and in-house,2,5,0.10638297872340426,47,11%
+Make or Buy,By agency (20+ cases),3,NASA  (47),2,,,Built in-house,3,41,0.8723404255319149,47,87%
+Make or Buy,By agency (20+ cases),3,DOI  (129),3,,,Purchased from a vendor,1,14,0.10852713178294573,129,11%
+Make or Buy,By agency (20+ cases),3,DOI  (129),3,,,Vendor and in-house,2,7,0.05426356589147287,129,
+Make or Buy,By agency (20+ cases),3,DOI  (129),3,,,Built in-house,3,108,0.8372093023255814,129,84%
+Make or Buy,By agency (20+ cases),3,USDA  (86),4,,,Purchased from a vendor,1,11,0.12790697674418605,86,13%
+Make or Buy,By agency (20+ cases),3,USDA  (86),4,,,Vendor and in-house,2,23,0.26744186046511625,86,27%
+Make or Buy,By agency (20+ cases),3,USDA  (86),4,,,Built in-house,3,52,0.6046511627906976,86,60%
+Make or Buy,By agency (20+ cases),3,DOL  (23),5,,,Purchased from a vendor,1,3,0.13043478260869565,23,13%
+Make or Buy,By agency (20+ cases),3,DOL  (23),5,,,Vendor and in-house,2,8,0.34782608695652173,23,35%
+Make or Buy,By agency (20+ cases),3,DOL  (23),5,,,Built in-house,3,12,0.5217391304347826,23,52%
+Make or Buy,By agency (20+ cases),3,TREAS  (48),6,,,Purchased from a vendor,1,13,0.2708333333333333,48,27%
+Make or Buy,By agency (20+ cases),3,TREAS  (48),6,,,Vendor and in-house,2,16,0.3333333333333333,48,33%
+Make or Buy,By agency (20+ cases),3,TREAS  (48),6,,,Built in-house,3,19,0.3958333333333333,48,40%
+Make or Buy,By agency (20+ cases),3,SSA  (31),7,,,Purchased from a vendor,1,15,0.4838709677419355,31,48%
+Make or Buy,By agency (20+ cases),3,SSA  (31),7,,,Vendor and in-house,2,6,0.1935483870967742,31,19%
+Make or Buy,By agency (20+ cases),3,SSA  (31),7,,,Built in-house,3,10,0.3225806451612903,31,32%
+Make or Buy,By agency (20+ cases),3,HHS  (255),8,,,Purchased from a vendor,1,51,0.2,255,20%
+Make or Buy,By agency (20+ cases),3,HHS  (255),8,,,Vendor and in-house,2,123,0.4823529411764706,255,48%
+Make or Buy,By agency (20+ cases),3,HHS  (255),8,,,Built in-house,3,81,0.3176470588235294,255,32%
+Make or Buy,By agency (20+ cases),3,STATE  (28),9,,,Purchased from a vendor,1,5,0.17857142857142858,28,18%
+Make or Buy,By agency (20+ cases),3,STATE  (28),9,,,Vendor and in-house,2,15,0.5357142857142857,28,54%
+Make or Buy,By agency (20+ cases),3,STATE  (28),9,,,Built in-house,3,8,0.2857142857142857,28,29%
+Make or Buy,By agency (20+ cases),3,DOE  (176),10,,,Purchased from a vendor,1,78,0.4431818181818182,176,44%
+Make or Buy,By agency (20+ cases),3,DOE  (176),10,,,Vendor and in-house,2,49,0.2784090909090909,176,28%
+Make or Buy,By agency (20+ cases),3,DOE  (176),10,,,Built in-house,3,49,0.2784090909090909,176,28%
+Make or Buy,By agency (20+ cases),3,SEC  (25),11,,,Purchased from a vendor,1,8,0.32,25,32%
+Make or Buy,By agency (20+ cases),3,SEC  (25),11,,,Vendor and in-house,2,12,0.48,25,48%
+Make or Buy,By agency (20+ cases),3,SEC  (25),11,,,Built in-house,3,5,0.2,25,20%
+Make or Buy,By agency (20+ cases),3,DHS  (118),12,,,Purchased from a vendor,1,44,0.3728813559322034,118,37%
+Make or Buy,By agency (20+ cases),3,DHS  (118),12,,,Vendor and in-house,2,51,0.4322033898305085,118,43%
+Make or Buy,By agency (20+ cases),3,DHS  (118),12,,,Built in-house,3,23,0.19491525423728814,118,19%
+Make or Buy,By agency (20+ cases),3,VA  (159),13,,,Purchased from a vendor,1,106,0.6666666666666666,159,67%
+Make or Buy,By agency (20+ cases),3,VA  (159),13,,,Vendor and in-house,2,23,0.14465408805031446,159,14%
+Make or Buy,By agency (20+ cases),3,VA  (159),13,,,Built in-house,3,30,0.18867924528301888,159,19%
+Make or Buy,By agency (20+ cases),3,DOJ  (188),14,,,Purchased from a vendor,1,153,0.8138297872340425,188,81%
+Make or Buy,By agency (20+ cases),3,DOJ  (188),14,,,Vendor and in-house,2,21,0.11170212765957446,188,11%
+Make or Buy,By agency (20+ cases),3,DOJ  (188),14,,,Built in-house,3,14,0.07446808510638298,188,

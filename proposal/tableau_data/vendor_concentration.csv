@@ -1,16 +1,16 @@
-"chart","panel","panel_order","row_label","row_order","column_label","column_order","category","category_order","count","share","secondary","mark_label"
-"Vendor Concentration","",,"Microsoft",1,"",,"",,133,,21,"133 cases · 21 agencies"
-"Vendor Concentration","",,"OpenAI",2,"",,"",,35,,10,"35 cases · 10 agencies"
-"Vendor Concentration","",,"Google",3,"",,"",,34,,12,"34 cases · 12 agencies"
-"Vendor Concentration","",,"Amazon Web Services",4,"",,"",,27,,8,"27 cases · 8 agencies"
-"Vendor Concentration","",,"Deloitte",5,"",,"",,27,,5,"27 cases · 5 agencies"
-"Vendor Concentration","",,"Palantir",6,"",,"",,26,,5,"26 cases · 5 agencies"
-"Vendor Concentration","",,"ServiceNow",7,"",,"",,19,,6,"19 cases · 6 agencies"
-"Vendor Concentration","",,"Thomson Reuters",8,"",,"",,14,,6,"14 cases · 6 agencies"
-"Vendor Concentration","",,"Leidos",9,"",,"",,10,,4,"10 cases · 4 agencies"
-"Vendor Concentration","",,"Guidehouse",10,"",,"",,9,,3,"9 cases · 3 agencies"
-"Vendor Concentration","",,"Accenture",11,"",,"",,7,,2,"7 cases · 2 agencies"
-"Vendor Concentration","",,"Adobe",12,"",,"",,7,,4,"7 cases · 4 agencies"
-"Vendor Concentration","",,"Anthropic",13,"",,"",,6,,3,"6 cases · 3 agencies"
-"Vendor Concentration","",,"Axon",14,"",,"",,6,,1,"6 cases · 1 agency"
-"Vendor Concentration","",,"Esri",15,"",,"",,6,,4,"6 cases · 4 agencies"
+chart,panel,panel_order,row_label,row_order,column_label,column_order,category,category_order,count,share,secondary,mark_label
+Vendor Concentration,,,Microsoft,1,,,,,133,,21,133 cases · 21 agencies
+Vendor Concentration,,,OpenAI,2,,,,,35,,10,35 cases · 10 agencies
+Vendor Concentration,,,Google,3,,,,,34,,12,34 cases · 12 agencies
+Vendor Concentration,,,Amazon Web Services,4,,,,,27,,8,27 cases · 8 agencies
+Vendor Concentration,,,Deloitte,5,,,,,27,,5,27 cases · 5 agencies
+Vendor Concentration,,,Palantir,6,,,,,26,,5,26 cases · 5 agencies
+Vendor Concentration,,,ServiceNow,7,,,,,19,,6,19 cases · 6 agencies
+Vendor Concentration,,,Thomson Reuters,8,,,,,14,,6,14 cases · 6 agencies
+Vendor Concentration,,,Leidos,9,,,,,10,,4,10 cases · 4 agencies
+Vendor Concentration,,,Guidehouse,10,,,,,9,,3,9 cases · 3 agencies
+Vendor Concentration,,,Accenture,11,,,,,7,,2,7 cases · 2 agencies
+Vendor Concentration,,,Adobe,12,,,,,7,,4,7 cases · 4 agencies
+Vendor Concentration,,,Anthropic,13,,,,,6,,3,6 cases · 3 agencies
+Vendor Concentration,,,Axon,14,,,,,6,,1,6 cases · 1 agency
+Vendor Concentration,,,Esri,15,,,,,6,,4,6 cases · 4 agencies
