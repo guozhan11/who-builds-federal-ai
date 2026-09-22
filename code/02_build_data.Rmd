@@ -1,0 +1,280 @@
+---
+title: "02 · Build the analysis data"
+subtitle: "Who Builds Federal AI? · PPOL 5202"
+author: "Nora Zhan"
+output:
+  html_document:
+    toc: true
+    df_print: kable
+---
+
+This notebook turns the raw files from `01_download_data.Rmd` into two analysis tables and one join key. Every figure in the project is computed in R from these files; there are no per-figure CSVs.
+
+| File | One row is | Source |
+|---|---|---|
+| `data/processed/ai_use_cases.csv` | one AI use case in one inventory year (2023, 2024, 2025) | OMB |
+| `data/processed/workforce.csv` | one count of federal employees: headcount at a snapshot, or hires or exits in a month, for one combination of department, occupation, age, length of service, and exit type | OPM |
+| `data/keys/use_case_link_2024_2025.csv` | one 2024 use case matched to a 2025 use case | join key: OMB 2024 ↔ OMB 2025 |
+
+The two tables are never merged. Their units differ (an AI use case versus a count of employees), and the project uses them side by side. The only join is inside the OMB data, between the 2024 and 2025 inventories.
+
+Raw files are never modified. Missing values are written as empty cells, so Tableau reads them as nulls and R's `read_csv()` reads them as `NA`.
+
+```{r setup, message = FALSE}
+library(tidyverse)
+library(arrow)
+library(here)
+
+raw  <- here("data", "raw")
+proc <- here("data", "processed")
+keys <- here("data", "keys")
+dir.create(proc, showWarnings = FALSE)
+```
+
+# Part A · OMB AI use cases
+
+## A1. Read the three inventories
+
+Only agency, use case name, and development stage exist in all three years. Topic area and build strategy (who developed the system) exist in 2024 and 2025. Classification, vendor, and the high-impact flag exist only in 2025.
+
+```{r omb-read}
+omb <- file.path(raw, "omb_ai_inventory")
+
+ai23 <- read_csv(file.path(omb, "2023_consolidated_ai_inventory_raw.csv"),
+                 locale = locale(encoding = "latin1"), show_col_types = FALSE) |>
+  transmute(year = 2023L, agency = Department_Code, use_case_name = Title,
+            stage_raw = Development_Stage)
+
+ai24 <- read_csv(file.path(omb, "2024_consolidated_ai_inventory_raw_v2.csv"),
+                 locale = locale(encoding = "latin1"), show_col_types = FALSE,
+                 name_repair = "unique_quiet") |>
+  transmute(year = 2024L, agency = `Agency Abbreviation`, use_case_name = `Use Case Name`,
+            stage_raw = `Stage of Development`,
+            topic_area = `Use Case Topic Area`,
+            build_raw = str_squish(`Was the AI system involved in this use case developed (or is it to be developed) under contract(s) or in-house?`))
+
+ai25 <- read_csv(file.path(omb, "2025_individually_reported_AI_use_cases.csv"),
+                 show_col_types = FALSE) |>
+  transmute(year = 2025L, agency, use_case_name, stage_raw = development_stage,
+            topic_area, build_raw = contracting_usage, classification, vendor_name,
+            is_high_impact)
+
+use_cases <- bind_rows(ai23, ai24, ai25) |>
+  filter(!is.na(agency)) |>
+  group_by(year) |>
+  mutate(record_id = sprintf("%d-%04d", year, row_number())) |>
+  ungroup()
+
+count(use_cases, year, name = "use_cases")
+```
+
+## A2. Harmonize stage and build strategy
+
+Stage labels differ every year. They are mapped onto the 2025 vocabulary: Pre-deployment, Pilot, Deployed, Retired.
+
+Build strategy is mapped onto three values: Vendor, Vendor and in-house, and In-house. One wording difference matters. The 2024 form asked whether a system was "developed with contracting resources"; the 2025 form asked whether it was "purchased from a vendor". Both are coded as Vendor, so a comparison across years should say so.
+
+```{r harmonize}
+use_cases <- use_cases |>
+  mutate(
+    stage = case_when(
+      str_detect(stage_raw, regex("retired", ignore_case = TRUE))                          ~ "Retired",
+      str_detect(stage_raw, regex("^deployed|operation|in-use|in mission|in production", ignore_case = TRUE)) ~ "Deployed",
+      str_detect(stage_raw, regex("^pilot|implementation|proof-of-concept", ignore_case = TRUE))  ~ "Pilot",
+      !is.na(stage_raw)                                                                     ~ "Pre-deployment"),
+    build = case_when(
+      build_raw %in% c("Vendor Purchased", "Developed with contracting resources.",
+                       "Exclusively developed with contract/external resources.")           ~ "Vendor",
+      build_raw %in% c("Contracting and In House",
+                       "Developed with both contracting and in-house resources.",
+                       "Developed with a combination of in-house and contract/external resources.") ~ "Vendor and in-house",
+      build_raw %in% c("In-house Development", "Developed in-house.",
+                       "No contract/external resources used in development.")               ~ "In-house"))
+
+count(use_cases, year, stage) |> pivot_wider(names_from = year, values_from = n)
+count(use_cases, year, build) |> pivot_wider(names_from = year, values_from = n)
+```
+
+## A3. Link 2024 use cases to 2025 records (join key)
+
+The inventories share no stable ID, so records are linked by name within the same agency, in two passes:
+
+- **Exact:** names match after lower-casing, transliterating, and stripping punctuation.
+- **Fuzzy:** for records still unmatched, the closest 2025 name in the same agency, if normalized edit similarity is at least 0.8.
+
+The threshold check in A4 shows why 0.8 was chosen.
+
+```{r link}
+norm_name <- \(x) str_squish(str_replace_all(str_to_lower(iconv(x, "", "ASCII//TRANSLIT")),
+                                             "[^a-z0-9]+", " "))
+
+u24 <- use_cases |> filter(year == 2024) |> transmute(record_id, agency, name = use_case_name, k = norm_name(name))
+u25 <- use_cases |> filter(year == 2025) |> transmute(record_id, agency, name = use_case_name, k = norm_name(name))
+
+exact <- u24 |>
+  inner_join(u25, by = c("agency", "k"), suffix = c("_2024", "_2025"), relationship = "many-to-many") |>
+  distinct(record_id_2024, .keep_all = TRUE) |> distinct(record_id_2025, .keep_all = TRUE) |>
+  transmute(record_id_2024, record_id_2025, match_type = "exact", similarity = 1)
+
+rest24 <- filter(u24, !record_id %in% exact$record_id_2024)
+rest25 <- filter(u25, !record_id %in% exact$record_id_2025)
+
+candidates <- map_dfr(intersect(rest24$agency, rest25$agency), function(a) {
+  x <- filter(rest24, agency == a)
+  y <- filter(rest25, agency == a)
+  s <- 1 - adist(x$k, y$k) / outer(nchar(x$k), nchar(y$k), pmax)
+  j <- max.col(s, ties.method = "first")
+  tibble(record_id_2024 = x$record_id, record_id_2025 = y$record_id[j],
+         similarity = s[cbind(seq_len(nrow(x)), j)])
+})
+
+fuzzy <- candidates |>
+  filter(similarity >= 0.8) |>
+  arrange(desc(similarity)) |>
+  distinct(record_id_2025, .keep_all = TRUE) |>
+  mutate(match_type = "fuzzy")
+
+link <- bind_rows(exact, fuzzy) |>
+  mutate(link_id = sprintf("L%04d", row_number())) |>
+  left_join(select(u24, record_id_2024 = record_id, agency, name_2024 = name), by = "record_id_2024") |>
+  left_join(select(u25, record_id_2025 = record_id, name_2025 = name), by = "record_id_2025") |>
+  select(link_id, agency, record_id_2024, name_2024, record_id_2025, name_2025, match_type, similarity)
+
+write_csv(link, file.path(keys, "use_case_link_2024_2025.csv"), na = "")
+count(link, match_type)
+```
+
+## A4. Threshold check
+
+A random sample of candidate pairs in each similarity band. At 0.8 and above, the pairs are renames of one system. Between 0.6 and 0.8, renames are mixed with different products.
+
+```{r threshold-check}
+set.seed(1)
+candidates |>
+  mutate(band = cut(similarity, c(0.6, 0.7, 0.8, 0.9, 1), right = FALSE)) |>
+  filter(!is.na(band)) |>
+  group_by(band) |> slice_sample(n = 4) |> ungroup() |>
+  left_join(select(u24, record_id_2024 = record_id, name_2024 = name), by = "record_id_2024") |>
+  left_join(select(u25, record_id_2025 = record_id, name_2025 = name), by = "record_id_2025") |>
+  transmute(band, similarity = round(similarity, 2),
+            name_2024 = str_trunc(name_2024, 55), name_2025 = str_trunc(name_2025, 55)) |>
+  arrange(desc(band))
+```
+
+## A5. Write the use case table
+
+`link_id` is filled for linked 2024 and 2025 records, so a transition is a self-join on `link_id`.
+
+```{r write-use-cases}
+link_long <- bind_rows(
+  select(link, link_id, record_id = record_id_2024),
+  select(link, link_id, record_id = record_id_2025))
+
+use_cases <- use_cases |>
+  left_join(link_long, by = "record_id") |>
+  select(record_id, year, agency, use_case_name, stage, stage_raw,
+         build, build_raw, classification, topic_area, vendor_name, is_high_impact, link_id)
+
+write_csv(use_cases, file.path(proc, "ai_use_cases.csv"), na = "")
+glimpse(use_cases)
+```
+
+# Part B · OPM workforce
+
+## B1. Dimensions kept
+
+`workforce.csv` is a long table with one count column, `n`, and a `measure` column:
+
+- `headcount`: employees on the last day of a snapshot month (Sep 2023, Sep 2024, Dec 2024, Sep 2025, Jul 2026).
+- `hires`: accessions, meaning new hires and transfers in, by personnel-action effective month.
+- `exits`: separations, by effective month.
+
+Each measure is broken down by different dimensions. A dimension that was not kept for a measure is left blank.
+
+| Column | headcount | hires | exits |
+|---|---|---|---|
+| `department_code`, `department` | yes | yes | yes |
+| `occupation` (six technical series named; everything else "Other") | yes | yes | yes |
+| `occupational_group` | yes | | |
+| `age_bracket`, `tenure` (2 years or less / more than 2) | yes | | |
+| `separation_category`, `drp_indicator` (Deferred Resignation Program) | | | yes |
+
+Every row of the OPM files is one employee or one action (the files' `count` column is always 1), so counting rows gives people.
+
+The Department of Defense is kept in the table. Figures that use the latest months should drop it, because several DoD components did not submit June and July 2026 data. Dropping it also keeps the workforce figures on the same civilian-agency footing as the OMB inventories, which do not cover DoD.
+
+```{r opm-helpers}
+tech_series <- c("1560" = "Data science", "1550" = "Computer science",
+                 "1530" = "Statistics", "1529" = "Mathematical statistics",
+                 "1515" = "Operations research", "2210" = "IT management")
+
+occupation_of <- \(code) coalesce(unname(tech_series[code]), "Other")
+opm_files <- \(kind) list.files(file.path(raw, "opm_fwd", kind), full.names = TRUE)
+```
+
+## B2. Headcount, hires, exits
+
+```{r opm-build}
+headcount <- map_dfr(opm_files("employment"), \(f) {
+  read_parquet(f, col_select = c("snapshot_yyyymm", "department_code", "department",
+                                 "occupational_group", "occupational_series_code",
+                                 "age_bracket", "length_of_service_years")) |>
+    mutate(occupation = occupation_of(occupational_series_code),
+           tenure = if_else(as.numeric(length_of_service_years) <= 2,
+                            "2 years or less", "More than 2 years", missing = "More than 2 years")) |>
+    count(period = snapshot_yyyymm, department_code, department, occupational_group,
+          occupation, age_bracket, tenure)
+}) |>
+  mutate(measure = "headcount")
+
+hires <- map_dfr(opm_files("accessions"), \(f) {
+  read_parquet(f, col_select = c("personnel_action_effective_date_yyyymm", "department_code",
+                                 "department", "occupational_series_code")) |>
+    mutate(occupation = occupation_of(occupational_series_code)) |>
+    count(period = personnel_action_effective_date_yyyymm, department_code, department, occupation)
+}) |>
+  mutate(measure = "hires")
+
+exits <- map_dfr(opm_files("separations"), \(f) {
+  read_parquet(f, col_select = c("personnel_action_effective_date_yyyymm", "department_code",
+                                 "department", "occupational_series_code",
+                                 "separation_category", "drp_indicator")) |>
+    mutate(occupation = occupation_of(occupational_series_code)) |>
+    count(period = personnel_action_effective_date_yyyymm, department_code, department, occupation,
+          separation_category, drp_indicator)
+}) |>
+  mutate(measure = "exits")
+
+workforce <- bind_rows(headcount, hires, exits) |>
+  # Flow files are organized by processing month; a few actions carry earlier effective dates.
+  filter(measure == "headcount" | period >= "202401") |>
+  group_by(measure, period, department_code, department, occupational_group, occupation,
+           age_bracket, tenure, separation_category, drp_indicator) |>
+  summarise(n = sum(n), .groups = "drop") |>
+  relocate(measure, period)
+
+write_csv(workforce, file.path(proc, "workforce.csv"), na = "")
+c(rows = nrow(workforce))
+```
+
+## B3. Checks
+
+The totals below should match the figures quoted in the proposal.
+
+```{r opm-checks}
+# Non-DoD headcount by snapshot
+workforce |>
+  filter(measure == "headcount", department_code != "DOD") |>
+  count(period, wt = n, name = "headcount")
+
+# Separations since January 2025, and how many were deferred resignations
+workforce |>
+  filter(measure == "exits", period >= "202501") |>
+  summarise(exits = sum(n), deferred_resignations = sum(n[drp_indicator == "Y"]))
+
+# Data science (series 1560), non-DoD: hires and exits by month
+workforce |>
+  filter(measure != "headcount", occupation == "Data science", department_code != "DOD") |>
+  count(period, measure, wt = n) |>
+  pivot_wider(names_from = measure, values_from = n, values_fill = 0)
+```

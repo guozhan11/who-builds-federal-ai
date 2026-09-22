@@ -1,0 +1,102 @@
+---
+title: "01 · Download raw data"
+subtitle: "Who Builds Federal AI? · PPOL 5202"
+author: "Nora Zhan"
+output:
+  html_document:
+    toc: true
+    df_print: kable
+---
+
+This notebook downloads every raw file the project uses into `data/raw/`. Re-running it is safe: files that already exist are skipped, so a full re-knit only re-queries the OPM file manifests.
+
+**Sources**
+
+1.  OMB Federal Agency AI Use Case Inventories (2023, 2024, 2025) <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory> and <https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory>
+2.  OPM Federal Workforce Data (FWD), record-level EHRI files in Parquet <https://data.opm.gov/get-data/data-downloads> (API: `https://data.opm.gov/api/v1/files/{type}` and `.../{type}/{year}/{month}/{version}/download`)
+
+The OPM files total about 380 MB.
+
+```{r setup, message = FALSE}
+library(jsonlite)
+library(here)
+
+options(timeout = 1200)
+
+fetch <- function(url, dest) {
+  if (file.exists(dest)) return(invisible(dest))
+  dir.create(dirname(dest), recursive = TRUE, showWarnings = FALSE)
+  message("Downloading ", basename(dest))
+  download.file(url, dest, mode = "wb", quiet = TRUE)
+  invisible(dest)
+}
+```
+
+## 1. OMB AI use case inventories
+
+The 2025 repository holds the individually reported use cases, the consolidated commercial-product (COTS) list, and OMB's data dictionary and standardization report. The 2023 and 2024 inventories live in the 2024 repository.
+
+```{r omb}
+omb_dir <- here("data", "raw", "omb_ai_inventory")
+b25 <- "https://raw.githubusercontent.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory/main"
+b24 <- "https://raw.githubusercontent.com/ombegov/2024-Federal-AI-Use-Case-Inventory/main"
+
+omb_files <- c(
+  "2025_individually_reported_AI_use_cases.csv" = paste0(b25, "/Data/2025_individually_reported_AI_use_cases.csv"),
+  "2025_consolidated_COTS_AI_use_cases.csv"     = paste0(b25, "/Data/2025_consolidated_COTS_AI_use_cases.csv"),
+  "2025_data_dictionary.md"                     = paste0(b25, "/Validation/data_dictionary.md"),
+  "2025_data_standardization_report.md"         = paste0(b25, "/Validation/data_standardization_report.md"),
+  "2025_README.md"                              = paste0(b25, "/README.md"),
+  "2024_consolidated_ai_inventory_raw_v2.csv"   = paste0(b24, "/data/2024_consolidated_ai_inventory_raw_v2.csv"),
+  "2023_consolidated_ai_inventory_raw.csv"      = paste0(b24, "/data/2023_consolidated_ai_inventory_raw.csv"),
+  "2024_data_dictionary.yaml"                   = paste0(b24, "/validation/data_dictionary.yaml"),
+  "2024_README.md"                              = paste0(b24, "/README.md")
+)
+for (f in names(omb_files)) fetch(omb_files[[f]], file.path(omb_dir, f))
+
+list.files(omb_dir)
+```
+
+## 2. OPM Federal Workforce Data
+
+OPM publishes several versions of each month's file as records are corrected. The manifest keeps only the `current` version, and the manifest actually used is saved next to the files so the download can be audited.
+
+```{r opm-helpers}
+opm_dir <- here("data", "raw", "opm_fwd")
+opm_api <- "https://data.opm.gov/api/v1/files"
+
+fetch("https://data.opm.gov/FWD%20Data%20Dictionary.xlsx",
+      file.path(opm_dir, "FWD_Data_Dictionary.xlsx"))
+
+# Current (latest-version) file for each month of a given file type
+opm_manifest <- function(type) {
+  m <- fromJSON(file.path(opm_api, type))
+  m <- m[m$current, c("filename", "year", "month", "version")]
+  m$yyyymm <- paste0(m$year, m$month)
+  m[order(m$yyyymm), ]
+}
+
+download_opm <- function(type, months) {
+  m <- opm_manifest(type)
+  m <- m[m$yyyymm %in% months, ]
+  write.csv(m, file.path(opm_dir, paste0(type, "_manifest.csv")), row.names = FALSE)
+  for (i in seq_len(nrow(m))) {
+    url <- sprintf("%s/%s/%s/%s/%s/download", opm_api, type, m$year[i], m$month[i], m$version[i])
+    fetch(url, file.path(opm_dir, type, paste0(m$filename[i], ".parquet")))
+  }
+}
+```
+
+Flows (hires and exits) are downloaded for every month from January 2024, a full year before the change of administration, through the latest release. Headcount snapshots are taken at the end of fiscal years 2023–2025, in December 2024 (the last month before January 20, 2025), and in the latest month.
+
+```{r opm-download}
+flow_months <- format(seq(as.Date("2024-01-01"), Sys.Date(), by = "month"), "%Y%m")
+download_opm("separations", flow_months)
+download_opm("accessions",  flow_months)
+
+latest_emp <- tail(opm_manifest("employment")$yyyymm, 1)
+download_opm("employment", c("202309", "202409", "202412", "202509", latest_emp))
+
+sapply(c("employment", "separations", "accessions"),
+       \(d) length(list.files(file.path(opm_dir, d))))
+```
