@@ -11,7 +11,7 @@ output:
 This notebook reshapes `data/processed/ai_use_cases.csv` into the three chart-specific tables that the proposal's Tableau workbook (`proposal/prototypes_tableau_native.twbx`) reads. They are derived tables, not new data: every number in them is a count of rows in `ai_use_cases.csv`.
 
 | File | Prototype | One row is |
-|---|---|---|
+|----|----|----|
 | `proposal/tableau_data/make_or_buy.csv` | 1 · 100% stacked bar | one group (all agencies, one type of AI, or one agency) × one build strategy |
 | `proposal/tableau_data/agency_topics.csv` | 2 · heatmap | one agency × one topic area |
 | `proposal/tableau_data/vendor_concentration.csv` | 3 · dot plot | one vendor |

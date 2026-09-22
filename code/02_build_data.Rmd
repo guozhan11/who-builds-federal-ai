@@ -11,7 +11,7 @@ output:
 This notebook turns the raw files from `01_download_data.Rmd` into two analysis tables and one join key. Every figure in the project is computed from these files; the three small tables the proposal's Tableau workbook reads are reshaped from `ai_use_cases.csv` in `03_build_tableau_data.Rmd`.
 
 | File | One row is | Source |
-|---|---|---|
+|----|----|----|
 | `data/processed/ai_use_cases.csv` | one AI use case in one inventory year (2023, 2024, 2025) | OMB |
 | `data/processed/workforce.csv` | one count of federal employees: headcount at a snapshot, or hires or exits in a month, for one combination of department, occupation, age, length of service, and exit type | OPM |
 | `data/keys/use_case_link_2024_2025.csv` | one 2024 use case matched to a 2025 use case | join key: OMB 2024 ↔ OMB 2025 |
@@ -193,12 +193,12 @@ glimpse(use_cases)
 Each measure is broken down by different dimensions. A dimension that was not kept for a measure is left blank.
 
 | Column | headcount | hires | exits |
-|---|---|---|---|
+|----|----|----|----|
 | `department_code`, `department` | yes | yes | yes |
 | `occupation` (six technical series named; everything else "Other") | yes | yes | yes |
-| `occupational_group` | yes | | |
-| `age_bracket`, `tenure` (2 years or less / more than 2) | yes | | |
-| `separation_category`, `drp_indicator` (Deferred Resignation Program) | | | yes |
+| `occupational_group` | yes |  |  |
+| `age_bracket`, `tenure` (2 years or less / more than 2) | yes |  |  |
+| `separation_category`, `drp_indicator` (Deferred Resignation Program) |  |  | yes |
 
 Every row of the OPM files is one employee or one action (the files' `count` column is always 1), so counting rows gives people.
 

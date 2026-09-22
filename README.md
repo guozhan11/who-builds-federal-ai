@@ -1,71 +1,74 @@
-# Who Builds Federal AI? Vendors, Pilots, and the Technical Workforce, 2024–2026
+# Who Builds Federal AI?
 
-PPOL 5202 Data Visualization, semester project. Guo (Nora) Zhan.
+Vendors, pilots, and the technical workforce, 2024–2026.
 
-The project describes two sides of the federal government's AI capacity:
+Data visualization project for PPOL 5202, Fall 2026.
 
-- the AI agencies run, from the OMB AI Use Case Inventories: how pilots mature, and whether systems are bought or built;
-- the technical staff agencies have to build and run it, from OPM Federal Workforce Data.
+In 2024, federal agencies hired about 460 technical and data staff a month. From February 2025 to April 2026, they hired about 50 a month. Over the same period, the AI use cases agencies reported to OMB grew from 2,133 to 3,611. Federal AI kept expanding while hiring for the people who build it fell sharply.
 
-## Reproducing
+That raises a question neither trend answers alone: **who builds the AI that federal agencies run, and does it get past the pilot stage?**
 
-The two final analysis tables are included in `data/processed/`. To reproduce them from the original public files, knit the three notebooks in `code/` in order, from RStudio (Knit button) or from the R console:
+The project uses two public federal sources side by side: the OMB AI Use Case Inventories, for the AI agencies say they run, and OPM Federal Workforce Data, for the technical staff they have to build and run it.
+
+## The three proposal prototypes
+
+**1. Most federal AI involves a vendor, but agencies differ sharply.** Of 1,444 pilot and deployed use cases in 2025, 38% were purchased from a vendor, 27% combined vendor and in-house work, and 35% were built in-house. The Department of Justice bought 81% of its AI; NASA built 87% of its own.
+
+![Make or buy, by type of AI and by agency](proposal/figures/prototype1_make_or_buy.png)
+
+**2. Agencies concentrate their AI in one or two kinds of work.** NASA reported 387 of its 424 classified use cases in science, the Department of Justice 170 of 295 in law enforcement, and the Department of Veterans Affairs 166 of 295 in health and medical work.
+
+![Agency AI portfolios by topic area](proposal/figures/prototype2_agency_topics.png)
+
+**3. One vendor appears far more often than any other.** Microsoft is named in 133 use cases across 21 agencies, ahead of OpenAI (35 cases, 10 agencies) and Google (34 cases, 12 agencies).
+
+![Vendors named in 2025 federal AI use cases](proposal/figures/prototype3_vendor_concentration.png)
+
+The full proposal, including the data viability tables and the semester plan, is in [`proposal/`](proposal).
+
+## What is in this repository
+
+```         
+proposal/     the proposal (Word and PDF), the packaged Tableau workbook,
+              the chart images above, and the data behind each chart
+code/         three R Markdown notebooks that download and build the data
+data/         the analysis tables the notebooks produce
+
+Data Access Links GitHub.docx   submission document linking to the two analysis tables
+```
+
+Two analysis tables carry the whole project:
+
+| File | One row is |
+|------------------------------------|------------------------------------|
+| `data/processed/ai_use_cases.csv` | one AI use case in one inventory year (2023, 2024, 2025) |
+| `data/processed/workforce.csv` | one count of federal employees: headcount at a snapshot, or hires or exits in a month |
+
+The two are never merged. They measure different things, an AI use case versus a count of people, and an agency-level join would invite a causal reading the data cannot support. The only join is inside the OMB data, linking a 2024 use case to the same use case in 2025 by name. That match is saved as its own file, `data/keys/use_case_link_2024_2025.csv`, so it can be inspected and challenged.
+
+## Reproducing the data
+
+Knit the three notebooks in `code/` in order, from RStudio or the R console:
 
 ``` r
-rmarkdown::render("code/01_download_data.Rmd")        # download raw data (~380 MB; skips files already present)
-rmarkdown::render("code/02_build_data.Rmd")           # build and merge the files in data/processed/
-rmarkdown::render("code/03_build_tableau_data.Rmd")   # reshape ai_use_cases.csv into the three Tableau chart tables
+rmarkdown::render("code/01_download_data.Rmd")        # download the raw files (~380 MB)
+rmarkdown::render("code/02_build_data.Rmd")           # build the two analysis tables
+rmarkdown::render("code/03_build_tableau_data.Rmd")   # build the three chart tables
 ```
 
-`01_download_data.Rmd` fixes the OPM months at January 2024 through July 2026, so a re-run downloads the same months the proposal used. OPM revises recent files, so re-downloaded counts can differ slightly; the manifests saved with the raw files record the versions used.
-
-Paths are resolved with `here::here()`, anchored by the `.here` file in this folder, so the notebooks run from any working directory. R packages: `tidyverse`, `arrow`, `jsonlite`, `here`, `rmarkdown`.
-
-The final proposal and packaged Tableau workbook are included in `proposal/`.
-
-## Folder structure
-
-```
-code/
-  01_download_data.Rmd          download all raw data from source URLs and APIs
-  02_build_data.Rmd             build the two analysis tables and the 2024–2025 join key
-  03_build_tableau_data.Rmd     build the three chart tables the Tableau workbook reads
-data/
-  processed/
-    ai_use_cases.csv            one row per AI use case per inventory year (2023, 2024, 2025)
-    workforce.csv               OPM counts: headcount, hires, exits by department, occupation, age, tenure, exit type
-  keys/
-    use_case_link_2024_2025.csv   join key: 2024 use case record_id -> 2025 record_id (match type, similarity)
-proposal/
-  Who Builds Federal AI.docx    final proposal
-  Who Builds Federal AI.pdf     final proposal PDF
-  prototypes_tableau_native.twbx  packaged Tableau workbook with its chart data
-  tableau_data/                 the three chart tables used in Tableau (from 03_build_tableau_data.Rmd)
-Data Access Links GitHub.docx   submission document linking to the two processed datasets
-.here                           marks the project root for here::here()
-```
-
-The large raw downloads are intentionally not stored in the repository. Running `code/01_download_data.Rmd` recreates `data/raw/` from the official OMB and OPM sources.
-
-## Joins
-
-The OMB and OPM tables are used side by side and are **not merged**. The only join is between the 2024 and 2025 OMB inventories:
-
-| Join | Key | File |
-|----|----|----|
-| OMB 2024 ↔ OMB 2025 (same use case) | `record_id_2024` ↔ `record_id_2025` (also stored as `link_id` in `ai_use_cases.csv`) | `data/keys/use_case_link_2024_2025.csv` |
+The first notebook skips files it has already downloaded, and the months are fixed at January 2024 through July 2026, so a later run reproduces the figures above. OPM revises recent months, so re-downloaded counts can shift slightly; the manifests saved with the raw files record the versions used. Paths are resolved with `here::here()`, so the notebooks run from any working directory. R packages: `tidyverse`, `arrow`, `jsonlite`, `here`, `rmarkdown`.
 
 ## Sources
 
 | Source | URL |
-|----|----|
+|------------------------------------|------------------------------------|
 | OPM Federal Workforce Data (EHRI status and dynamics files) | <https://data.opm.gov/get-data/data-downloads> |
 | OMB 2025 Federal Agency AI Use Case Inventory | <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory> |
 | OMB 2023 and 2024 Federal AI Use Case Inventories | <https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory> |
 
-## Manual steps and judgment calls
+## Judgment calls worth knowing about
 
-- No data file is edited by hand. The three Tableau chart tables are written by `03_build_tableau_data.Rmd`, including the shortened topic names on the heatmap; only the workbook layout and formatting were set by hand in Tableau.
-- The 2023 inventory is read as UTF-8 and the 2024 inventory as Windows-1252, the encodings the files actually use.
-- Linking 2024 and 2025 use cases uses a name-similarity threshold of 0.8, chosen by reading sampled pairs; the check is shown in `02_build_data.Rmd`, Section A4.
-- The Department of Defense is excluded from workforce figures: its June–July 2026 OPM data are incomplete, and the OMB inventories do not cover it either.
+- **No data file is edited by hand.** Every table in `data/` and `proposal/tableau_data/` is written by a notebook. Only the workbook layout and formatting were set by hand in Tableau.
+- **Linking 2024 to 2025 use cases** relies on names, because the inventories share no stable ID. Names that match after normalization are linked outright; the rest are linked when they are at least 80% similar, a threshold chosen by reading sampled pairs. Section A4 of `02_build_data.Rmd` shows that check.
+- **The Department of Defense is excluded from the workforce figures.** Several of its components did not submit June and July 2026 data, and the OMB inventories do not cover it either.
+- **The 2023 inventory is read as UTF-8 and the 2024 inventory as Windows-1252**, the encodings the files actually use.
