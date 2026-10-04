@@ -3,3 +3,8 @@
 ~$*
 data/raw/
 *.html
+
+# r_viz: course instructions and walkthrough videos stay local
+r_viz/instructions/
+r_viz/videos/
+r_viz/ai_use_cases.csv

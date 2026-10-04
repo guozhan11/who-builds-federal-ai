@@ -26,6 +26,14 @@ The project uses two public federal sources side by side: the OMB AI Use Case In
 
 The full proposal, including the data viability tables and the semester plan, is in [`proposal/`](proposal).
 
+## The R visualization exercises
+
+Each exercise is a Quarto document in [`r_viz/`](r_viz) that builds one figure with ggplot2 and saves it to `r_viz/figures/`.
+
+**1. Older types of AI are much further along than newer ones.** Over half of 2025 computer vision use cases (56%) were deployed, compared with 30% of generative AI and 17% of agentic AI. Two-thirds of agentic AI use cases (68%) were still in pre-deployment. ([`viz1_ai_maturity.qmd`](r_viz/viz1_ai_maturity.qmd))
+
+![Stage of 2025 federal AI use cases, by type of AI](r_viz/figures/viz1_ai_maturity.png)
+
 ## What is in this repository
 
 ```         
@@ -33,6 +41,7 @@ proposal/     the proposal (Word and PDF), the packaged Tableau workbook,
               the chart images above, and the data behind each chart
 code/         three R Markdown notebooks that download and build the data
 data/         the analysis tables the notebooks produce
+r_viz/        Quarto documents for the R visualization exercises and their figures
 
 Data Access Links GitHub.docx   submission document linking to the two analysis tables
 ```

@@ -1,0 +1,139 @@
+---
+title: "How Far Along Is Each Type of Federal AI?"
+subtitle: "Visualization Exercise 1 · PPOL 5202 · Who Builds Federal AI?"
+author: "Guo (Nora) Zhan"
+date: today
+format:
+  html:
+    embed-resources: true
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+# Setup
+options(tidyverse.quiet = TRUE)   # hide the tidyverse startup message
+library(tidyverse)
+library(scales)
+
+use_cases <- read_csv("ai_use_cases.csv", show_col_types = FALSE)
+```
+
+```{r}
+# Step 1: keep 2025 use cases that report a type of AI and an active stage
+active_2025 <- use_cases %>%
+  filter(year == 2025) %>%
+  filter(!is.na(classification), classification != "Other") %>%
+  filter(stage %in% c("Pre-deployment", "Pilot", "Deployed"))
+
+# Step 2: count use cases for each type of AI and stage
+stage_counts <- active_2025 %>%
+  count(classification, stage)
+
+# Step 3: within each type of AI, turn counts into shares
+stage_shares <- stage_counts %>%
+  group_by(classification) %>%
+  mutate(total = sum(n),
+         share = n / total) %>%
+  ungroup()
+
+# Step 4: drop types with fewer than 30 active use cases (too few to compare)
+stage_shares <- stage_shares %>%
+  filter(total >= 30)
+
+# Step 5: build the bar label, e.g. "Agentic AI  (117)"
+stage_shares <- stage_shares %>%
+  mutate(type_label = paste0(classification, "  (", comma(total), ")"))
+
+# Step 6: put the stages in their natural order (earliest to latest)
+stage_shares <- stage_shares %>%
+  mutate(stage = factor(stage, levels = c("Pre-deployment", "Pilot", "Deployed")))
+
+# Step 7: sort the bars by the share deployed, so the most mature type is on top
+type_order <- stage_shares %>%
+  filter(stage == "Deployed") %>%
+  arrange(share) %>%
+  pull(type_label)
+
+stage_shares <- stage_shares %>%
+  mutate(type_label = factor(type_label, levels = type_order))
+
+# Step 8: dark text on the light bar, white text on the two dark bars
+stage_shares <- stage_shares %>%
+  mutate(text_color = ifelse(stage == "Pre-deployment", "black", "white"))
+```
+
+```{r}
+#| fig-width: 9
+#| fig-height: 4.8
+#| fig-alt: "Horizontal stacked bars showing the share of 2025 federal AI use cases at each stage for five types of AI. Computer vision has the largest deployed share (56 percent) and agentic AI the smallest (17 percent)."
+
+# One color per stage: light orange (early) to dark orange (deployed)
+stage_colors <- c("Pre-deployment" = "#f5b08f",
+                  "Pilot" = "#eb6834",
+                  "Deployed" = "#b8461c")
+
+# Save the plot as an object so we can both show it and save it as a PNG
+maturity_plot <- ggplot(stage_shares,
+                        aes(x = share, y = type_label, fill = stage)) +
+  # Stacked bars; reverse = TRUE puts Pre-deployment on the left
+  geom_col(position = position_stack(reverse = TRUE),
+           width = 0.7, color = "white") +
+  # Percent label in the middle of each segment
+  geom_text(aes(label = percent(share, accuracy = 1), color = text_color),
+            position = position_stack(vjust = 0.5, reverse = TRUE),
+            size = 3.2) +
+  scale_fill_manual(values = stage_colors) +
+  scale_color_identity() +
+  scale_x_continuous(labels = percent, expand = c(0, 0)) +
+  labs(title = "Agentic AI is furthest from deployment; computer vision is closest",
+       subtitle = "Share of 2025 federal AI use cases at each stage, by type of AI. Number of use cases in parentheses.",
+       x = NULL,
+       y = NULL,
+       fill = NULL,
+       caption = "Retired use cases and types with fewer than 30 active cases are excluded.\nSource: OMB Federal Agency AI Use Case Inventory 2025, github.com/ombegov.") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top",
+        legend.justification = "left",
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"),
+        plot.title.position = "plot",
+        plot.caption = element_text(hjust = 0, color = "grey40"),
+        plot.caption.position = "plot",
+        plot.margin = margin(10, 20, 10, 10))
+
+# Show the plot in the rendered document
+maturity_plot
+
+# Also save it as a PNG for the project README on GitHub
+dir.create("figures", showWarnings = FALSE)
+ggsave("figures/viz1_ai_maturity.png", maturity_plot,
+       width = 9, height = 4.8, dpi = 300, bg = "white")
+```
+
+## What the figure shows
+
+Each year, federal agencies report the artificial intelligence (AI) systems they use or are developing to the Office of Management and Budget (OMB), the White House office that oversees federal management. Each entry in this inventory is a **use case**: one application of AI to one agency task, such as sorting public comments or reading satellite images. Agencies also report each use case's stage: *pre-deployment* (being planned, developed, or acquired), *pilot* (being tested on a limited basis), or *deployed* (in regular operation).
+
+The figure groups the 2025 use cases by the type of AI they rely on and shows what share of each type sits at each stage. **Units:** each bar adds up to 100% of the active 2025 use cases of that type, and the number in parentheses is that denominator. The types are:
+
+- **Computer vision:** AI that reads images or video.
+- **NLP (natural language processing):** AI that reads or classifies text, such as extracting fields from forms.
+- **Classical ML (machine learning):** statistical models that learn from data to predict or classify, such as fraud scoring.
+- **Generative AI:** AI that produces new text, images, or code, such as chat assistants.
+- **Agentic AI:** AI that carries out multi-step tasks with some autonomy.
+
+**Main takeaway.** Older types of AI are much further along than newer ones. Over half of computer vision use cases (56%) are deployed, compared with 30% of generative AI and 17% of agentic AI. Two-thirds of agentic AI use cases (68%) are still in pre-deployment.
+
+**How to read this carefully.** This is one year of data, so it describes where each type stands in 2025, not how fast use cases move between stages. Agentic and generative AI are newer, so some of the gap likely reflects how recently agencies started these projects rather than how hard they are to deploy. Stage is self-reported by agencies, and definitions may vary across agencies.
+
+**Data notes.** Of the 3,611 use cases in the 2025 inventory, the figure keeps those that report both a type of AI and an active stage. Retired use cases, use cases with no reported type or stage, the "Other" type, and reinforcement learning (12 use cases, too few to compare) are excluded. Source: OMB 2025 Federal Agency AI Use Case Inventory, <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory>, cleaned by `code/02_build_data.Rmd` in this project's GitHub repository.
+
+## AI use disclosure
+
+I used Claude Opus 5.5 to generate this Quarto document, including its structure (the YAML header, code chunks, and the settings that hide code in the rendered file), the ggplot2 styling code (colors, labels, theme, and margins).
+
+All AI-generated code are reviewed by me. As most are standard formatting code, not many changes are made.
