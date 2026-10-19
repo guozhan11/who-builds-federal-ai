@@ -4,7 +4,12 @@
 data/raw/
 *.html
 
-# r_viz: course instructions and walkthrough videos stay local
+# r_viz: course instructions, walkthrough scripts, and each exercise's data copy stay local
 r_viz/instructions/
-r_viz/videos/
-r_viz/ai_use_cases.csv
+r_viz/*/video/
+r_viz/*/ai_use_cases.csv
+
+# design_brief: course instructions, walkthrough script, and data copy stay local
+design_brief/Design Brief Assignment Instructions Fall 2026.docx
+design_brief/video/
+design_brief/ai_use_cases.csv

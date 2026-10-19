@@ -103,14 +103,19 @@ The inventories share no stable ID, so records are linked by name within the sam
 - **Exact:** names match after lower-casing, transliterating, and stripping punctuation.
 - **Fuzzy:** for records still unmatched, the closest 2025 name in the same agency, if normalized edit similarity is at least 0.8.
 
+Before either pass, a tag like "[2024 INV#WO0000000110496]" is removed from 2025 names. The Department of the Interior appended its 2024 inventory number to 125 of its 2025 names; left in, the tag blocks both passes, and only 6 of Interior's 180 use cases from 2024 are linked instead of 85.
+
 The threshold check in A4 shows why 0.8 was chosen.
 
 ```{r link}
 norm_name <- \(x) str_squish(str_replace_all(str_to_lower(iconv(x, "", "ASCII//TRANSLIT")),
                                              "[^a-z0-9]+", " "))
 
+# Interior's 2025 names carry their 2024 inventory number, e.g. "[2024 INV#WO0000000110496]"
+strip_2024_tag <- \(x) str_squish(str_remove_all(x, regex("\\[\\s*2024\\s*inv\\s*#[^\\]]*\\]", ignore_case = TRUE)))
+
 u24 <- use_cases |> filter(year == 2024) |> transmute(record_id, agency, name = use_case_name, k = norm_name(name))
-u25 <- use_cases |> filter(year == 2025) |> transmute(record_id, agency, name = use_case_name, k = norm_name(name))
+u25 <- use_cases |> filter(year == 2025) |> transmute(record_id, agency, name = use_case_name, k = norm_name(strip_2024_tag(name)))
 
 exact <- u24 |>
   inner_join(u25, by = c("agency", "k"), suffix = c("_2024", "_2025"), relationship = "many-to-many") |>

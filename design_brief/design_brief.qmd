@@ -1,0 +1,178 @@
+---
+title: "Design Brief: Who Builds Federal AI?"
+subtitle: "PPOL 5202 · Fall 2026"
+author: "Guo (Nora) Zhan"
+date: today
+format:
+  html:
+    embed-resources: true
+    mainfont: '"Public Sans", "Helvetica Neue", Arial, sans-serif'
+  typst:
+    fig-format: png
+    mainfont: "Helvetica Neue"
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+# Load my colors, fonts, and theme
+source("theme_project.R")
+library(tidyverse)
+library(colorspace)   # to simulate color blindness
+```
+
+## 1. Context
+
+*Who Builds Federal AI?* asks who builds the AI that federal agencies use, and whether it gets past testing. It uses the OMB AI Use Case Inventories for 2023 to 2025.
+
+My imagined client is the nonpartisan staff of a congressional committee that oversees how agencies buy and build technology. These staffers are busy, often read on paper, know agency names but not AI, and distrust charts that take a side. So my charts should be:
+
+- **Neutral:** show what the data say, and no more.
+- **Easy to check:** every number has a source and a denominator.
+- **Quick to read:** the main point is clear in five seconds.
+
+## 2. Named color system
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6.2
+#| fig-alt: "Swatches of every palette in the project, each labeled with its role and hex value."
+
+# Make a table with one row per color: its group, its job, and its hex code
+swatches <- bind_rows(
+  tibble(palette = "Core", role = names(proj_colors), hex = unname(proj_colors)),
+  tibble(palette = "Make or buy", role = names(pal_build), hex = unname(pal_build)),
+  tibble(palette = "Lifecycle stage", role = names(pal_stage), hex = unname(pal_stage)),
+  tibble(palette = "Type of AI", role = c("Newer types", "Established types"),
+         hex = unname(pal_ai_type[c("Generative AI", "Classical ML")])),
+  tibble(palette = "Use case counts", role = c("Few", "", "", "", "Many"),
+         hex = colorRampPalette(pal_volume)(5))
+) %>%
+  # number the colors within each group, left to right
+  group_by(palette) %>%
+  mutate(position = row_number()) %>%
+  ungroup() %>%
+  mutate(palette = factor(palette, levels = unique(palette)),
+         role = str_wrap(role, width = 14),
+         # use white text on dark colors and dark text on light colors
+         brightness = colSums(col2rgb(hex) * c(0.299, 0.587, 0.114)),
+         text_color = ifelse(brightness < 140, "white", proj_colors[["ink"]]))
+
+# Draw each color as a box with its job and hex code inside
+ggplot(swatches, aes(x = position, y = fct_rev(palette))) +
+  geom_tile(aes(fill = hex), width = 0.96, height = 0.86, colour = proj_colors[["grid"]]) +
+  geom_text(aes(label = role, colour = text_color), size = 8 / .pt, vjust = -0.3, lineheight = 0.9) +
+  geom_text(aes(label = hex, colour = text_color), size = 7.5 / .pt, vjust = 1.3) +
+  scale_fill_identity() +
+  scale_colour_identity() +
+  labs(title = "Each hue keeps one meaning across the portfolio",
+       subtitle = "Project palettes with functional names and hex values",
+       x = NULL, y = NULL) +
+  theme_project(grid = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = proj_colors[["ink"]], face = "bold"))
+```
+
+Only three colors, all at medium lightness, and **each means one thing in every chart**:
+
+- **Blue** is AI the government builds itself (in-house).
+- **Coral** is AI bought from a vendor.
+- **Teal** is the AI itself: stage (light to dark, darker means further along), counts of use cases, and the one highlighted bar or line.
+
+**Avoiding party colors.** U.S. readers see red and blue as Republican and Democrat. My project has no partisan variable, so I use no pure red: coral is a muted orange-red, and blue and coral only ever mean in-house versus vendor. Teal, the most common color, has no party meaning at all.
+
+Everything else is neutral:
+
+- **Text.** Dark *ink* for titles and labels, *ink soft* for axis text and notes, on white.
+- **Context gray** for anything that is not the main point, including retired use cases and established types of AI. No rainbow palettes.
+- **Light gray** for "vendor and in-house."
+- **Missing** is pale gray labeled "Not reported," so a blank never looks like zero.
+
+```{r}
+#| fig-width: 9
+#| fig-height: 3.4
+#| fig-alt: "The make-or-buy, stage, and use-case-count palettes simulated for deuteranopia, protanopia, and tritanopia; colors within each palette stay distinguishable."
+
+# Show how each palette looks to readers with three kinds of color blindness
+cvd_palettes <- list("Make or buy" = unname(pal_build),
+                     "Lifecycle stage" = unname(pal_stage),
+                     "Use case counts" = colorRampPalette(pal_volume)(5))
+
+# Make one row per color per kind of vision
+cvd_check <- imap_dfr(cvd_palettes, function(cols, name) {
+  tibble(palette = name,
+         vision = rep(c("Typical", "Deuteranopia", "Protanopia", "Tritanopia"), each = length(cols)),
+         position = rep(seq_along(cols), 4),
+         hex = c(cols, deutan(cols), protan(cols), tritan(cols)))
+}) %>%
+  mutate(vision = factor(vision, levels = rev(c("Typical", "Deuteranopia", "Protanopia", "Tritanopia"))),
+         palette = factor(palette, levels = names(cvd_palettes)))
+
+ggplot(cvd_check, aes(x = position, y = vision, fill = hex)) +
+  geom_tile(colour = "white", linewidth = 1) +
+  scale_fill_identity() +
+  facet_wrap(~ palette, nrow = 1, scales = "free_x") +
+  labs(title = "Colors within each palette stay distinct under color-vision deficiency",
+       subtitle = "Simulated with the colorspace package",
+       x = NULL, y = NULL) +
+  theme_project(grid = "none") +
+  theme(axis.text.x = element_blank())
+```
+
+Under red-green color blindness the teal turns gray but still runs light to dark, so the order stays clear. Teal and blue look alike in one simulation, so they never share a chart.
+
+## 3. Typography
+
+I use one typeface: **Public Sans → Helvetica Neue → Arial → sans-serif**. Public Sans is the free font of U.S. government websites, familiar to this audience. If it is not installed, the theme script uses the next font on the list. Text levels differ only in size, boldness, and shade:
+
+```{r}
+#| fig-width: 8
+#| fig-height: 3.6
+#| fig-alt: "A sample chart whose title, subtitle, axis labels, direct label, annotation, and caption each describe their own type specification."
+
+# A small fake chart; each piece of text describes its own style
+type_demo <- tibble(group = c("Context", "Context", "Focus", "Context"),
+                    label = c("B", "C", "A", "D"),
+                    value = c(40, 55, 82, 30))
+
+ggplot(type_demo, aes(x = value, y = reorder(label, value), fill = group)) +
+  geom_col(width = 0.65) +
+  geom_text(data = filter(type_demo, group == "Focus"),
+            aes(label = "Direct label: 10 pt regular, ink"),
+            hjust = -0.04) +
+  annotate("text", x = 57, y = 3, hjust = 0, size = size_annotation,
+           label = "Annotation: 9 pt regular,\nink, beside the mark") +
+  scale_fill_manual(values = c(Context = proj_colors[["context"]],
+                               Focus = proj_colors[["highlight"]]),
+                    guide = "none") +
+  scale_x_continuous(expand = c(0, 0), limits = c(0, 130), breaks = seq(0, 80, 20)) +
+  labs(title = "Title: 15 pt bold, ink, a full-sentence finding",
+       subtitle = "Subtitle: 11 pt regular, ink soft, what is measured, units, and denominator",
+       x = "Axis text and titles: 10 pt regular, ink soft", y = NULL,
+       caption = "Caption and source: 8.5 pt regular, ink soft, left-aligned; exclusions first, source last.\nSource: Agency, dataset name, year.") +
+  theme_project()
+```
+
+## 4. Chart conventions
+
+Each rule says what to do, why, and what it rules out.
+
+1.  **Every percentage shows the number of cases behind it, like "NASA (47)." Groups with fewer than 30 cases are left out, and the note says so.** *Why:* agencies report from about 20 to over 250 cases. *Rules out:* percentages without a count, and bars based on a few cases.
+
+2.  **A color keeps the same meaning in every chart (section 2), and each chart uses color for only one variable.** *Why:* readers see the charts together. *Rules out:* coral for stage, rainbow colors for agencies or AI types, and two color codes in one chart.
+
+3.  **Stage always runs in the same order: pre-deployment, pilot, deployed. The note says agencies report stage themselves.** *Why:* stage is a sequence, and nobody checks the answers. *Rules out:* alphabetical order, and treating "deployed" as confirmed.
+
+4.  **Titles about the number of AI use cases say "reported," and comparisons across years only use questions asked the same way each year.** *Why:* OMB changed what agencies had to report. Part of the rise from 2,133 to 3,611 use cases may come from fuller reporting, not more AI. *Rules out:* titles like "Agencies adopted 69% more AI."
+
+5.  **Comparisons between years use the name-matched link file. Use cases with no match are shown in gray as "Not found," and the note says how matching works.** *Why:* the inventories share no ID, so matches rely on names, and agencies rename or reformat use cases between years. A use case with no match may have been renamed, merged, or ended. *Rules out:* dropping unmatched use cases, or calling them ended.
+
+6.  **Vendor counts merge product names into their firm (Copilot counts as Microsoft) and count a firm once per use case, as the note says.** *Why:* vendor names are free text. *Rules out:* one firm split across several bars, or one use case counted twice.
+
+## Appendix
+
+**Files.** `theme_project.R` holds all colors, the font list, and the `theme_project()` function. `viz1_restyle.html` applies the system to Visualization Exercise 1, with a before and after version and a short memo.
+
+**AI-use statement.** I used Claude Opus 5.5 (through Claude Code) to draft this brief from my project files and the course instructions. It drafted the color palettes, the theme script, the color-blindness test code, the restyled Exercise 1 code, and a first version of the text. Claude first proposed a five-color palette (orange, blue, teal, rust, and purple). I rejected it: with a different color in almost every chart, the portfolio did not look like one system. I asked for fewer colors and reviewed several three-color sets on my own project data. I rejected the first ones as too dark and the next ones as too bright, and chose a mid-tone set of blue, coral, and teal, with each color assigned one meaning across all charts. To check the work, I ran `theme_project.R` in a fresh R session, rendered both documents from scratch, looked at every palette in the color-blindness test above, and checked that the restyled figure's percentages match the original.

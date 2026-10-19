@@ -1,0 +1,175 @@
+---
+title: "Proposal Prototypes, Restyled"
+subtitle: "Design Brief · PPOL 5202 · Who Builds Federal AI?"
+author: "Guo (Nora) Zhan"
+date: today
+format:
+  html:
+    embed-resources: true
+    mainfont: '"Public Sans", "Helvetica Neue", Arial, sans-serif'
+  typst:
+    fig-format: png
+    mainfont: "Helvetica Neue"
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+The three prototypes from my proposal, rebuilt in R with my project theme. They read the same chart tables as the Tableau workbook (`proposal/tableau_data/`, written by `code/03_build_tableau_data.Rmd`), so the numbers are unchanged. The originals stay in `proposal/figures/`.
+
+```{r}
+# Load my colors, fonts, and theme
+source("theme_project.R")
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+
+make_or_buy   <- read_csv("../proposal/tableau_data/make_or_buy.csv", show_col_types = FALSE)
+agency_topics <- read_csv("../proposal/tableau_data/agency_topics.csv", show_col_types = FALSE)
+vendors       <- read_csv("../proposal/tableau_data/vendor_concentration.csv", show_col_types = FALSE)
+
+# White text on dark fills, dark ink on light fills
+# (whichever has the higher contrast with the fill)
+on_fill <- function(hex) {
+  white_contrast <- colorspace::contrast_ratio(hex, "white")
+  ink_contrast   <- colorspace::contrast_ratio(hex, proj_colors[["ink"]])
+  ifelse(white_contrast > ink_contrast, "white", proj_colors[["ink"]])
+}
+
+dir.create("figures", showWarnings = FALSE)
+```
+
+## 1. Make or buy
+
+```{r}
+#| fig-width: 9
+#| fig-height: 7.2
+#| fig-alt: "Stacked bars showing the share of 2025 pilot and deployed federal AI use cases bought from a vendor, built with a vendor and in-house, or built in-house, for all agencies, each type of AI, and each agency with at least 30 cases. The Department of Justice bought 81 percent; NASA built 87 percent in-house."
+
+# Step 1: short category names that match my make-or-buy palette
+build_data <- make_or_buy %>%
+  mutate(build = recode(category,
+                        "Purchased from a vendor" = "Vendor",
+                        "Built in-house" = "In-house"),
+         build = factor(build, levels = c("Vendor", "Vendor and in-house", "In-house")))
+
+# Step 2: keep agencies with at least 30 cases (convention 1), and name the panels
+build_data <- build_data %>%
+  filter(panel != "By agency (20+ cases)" | secondary >= 30) %>%
+  mutate(panel = recode(panel, "By agency (20+ cases)" = "By agency"),
+         panel = factor(panel, levels = c("All", "By type of AI", "By agency")))
+
+# Step 3: within each panel, the most vendor-heavy group goes on top
+vendor_share <- build_data %>%
+  filter(build == "Vendor") %>%
+  select(row_label, vendor_share = share)
+
+build_data <- build_data %>%
+  left_join(vendor_share, by = "row_label") %>%
+  mutate(row_label = fct_reorder(row_label, vendor_share),
+         text_color = on_fill(pal_build[as.character(build)]),
+         label = ifelse(share >= 0.09, scales::percent(share, accuracy = 1), ""))
+
+# Step 4: category names written above the "All agencies" bar (instead of a legend)
+top_bar <- build_data %>%
+  filter(panel == "All") %>%
+  arrange(build) %>%
+  mutate(center = cumsum(share) - share / 2,
+         name = c("Vendor", "Both", "In-house"))
+
+p1 <- ggplot(build_data, aes(x = share, y = row_label, fill = build)) +
+  geom_col(position = position_stack(reverse = TRUE), width = 0.72,
+           colour = proj_colors[["paper"]], linewidth = 0.5) +
+  geom_text(aes(label = label, colour = text_color, group = build),
+            position = position_stack(vjust = 0.5, reverse = TRUE), size = 9 / .pt) +
+  geom_text(data = top_bar, aes(x = center, y = 1.6, label = name),
+            fontface = "bold", vjust = 0, inherit.aes = FALSE) +
+  facet_grid(panel ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  scale_fill_build(guide = "none") +
+  scale_colour_identity() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.6, 0.6))) +
+  coord_cartesian(clip = "off") +
+  labs(title = "Most federal AI involves a vendor, but agencies differ sharply",
+       subtitle = "Share of 2025 pilot and deployed AI use cases by who built them, as reported by agencies. Use cases in parentheses.",
+       x = NULL, y = NULL,
+       caption = "Agencies with fewer than 30 pilot or deployed use cases that report a development approach are excluded.\nSource: OMB 2025 Federal Agency AI Use Case Inventory, github.com/ombegov.") +
+  theme_project(grid = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = proj_colors[["ink"]]),
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0, vjust = 1, hjust = 0),
+        panel.spacing.y = unit(14, "pt"),
+        plot.subtitle = element_text(margin = margin(b = 26)))
+
+p1
+ggsave("figures/prototype1_make_or_buy.png", p1, width = 9, height = 7.2, dpi = 300, bg = "white")
+```
+
+## 2. Agency AI portfolios by topic area
+
+```{r}
+#| fig-width: 9
+#| fig-height: 6.4
+#| fig-alt: "Heatmap of 2025 federal AI use cases by agency and topic area, shaded from light to dark teal by each agency's share. NASA has 387 of 424 use cases in science, the Department of Justice 170 of 295 in law enforcement, and Veterans Affairs 166 of 295 in health and medical work."
+
+# Rows: largest agency on top. Columns: the order from the chart table ("Other" last)
+topic_data <- agency_topics %>%
+  mutate(row_label = fct_reorder(row_label, row_order),
+         column_label = fct_reorder(column_label, column_order),
+         # each cell's color comes from the agency's share; work out the fill to pick the text color
+         fill_hex = scales::seq_gradient_pal(pal_volume[["low"]], pal_volume[["high"]])(scales::rescale(share, from = c(0, 1))),
+         text_color = on_fill(fill_hex))
+
+p2 <- ggplot(topic_data, aes(x = column_label, y = row_label, fill = share)) +
+  geom_tile(colour = proj_colors[["paper"]], linewidth = 1) +
+  geom_text(aes(label = count, colour = text_color), size = 9 / .pt) +
+  scale_fill_volume(limits = c(0, 1), guide = "none") +
+  scale_colour_identity() +
+  scale_x_discrete(position = "top", labels = scales::label_wrap(10)) +
+  labs(title = "Agencies concentrate their AI in one or two kinds of work",
+       subtitle = "2025 AI use cases by agency and topic area, as reported. Darker cells hold a larger share of the agency's use cases.\nTotal use cases in parentheses.",
+       x = NULL, y = NULL,
+       caption = "Agencies with at least 50 use cases that report a topic area. The ten most common topics are shown; the rest are grouped as \"Other.\"\nSource: OMB 2025 Federal Agency AI Use Case Inventory, github.com/ombegov.") +
+  theme_project(grid = "none") +
+  theme(axis.text = element_text(colour = proj_colors[["ink"]]))
+
+p2
+ggsave("figures/prototype2_agency_topics.png", p2, width = 9, height = 6.4, dpi = 300, bg = "white")
+```
+
+## 3. Vendors named in 2025 use cases
+
+```{r}
+#| fig-width: 9
+#| fig-height: 5.6
+#| fig-alt: "Dot plot of the 15 vendors named in the most 2025 federal AI use cases; dot size shows how many agencies name each vendor. Microsoft, highlighted, is named in 133 use cases across 21 agencies, far ahead of OpenAI (35 cases, 10 agencies) and Google (34 cases, 12 agencies)."
+
+# Same design as the proposal: one dot per vendor, placed at its number of use cases,
+# sized by the number of agencies. Highlight the vendor the title is about; the rest stay gray.
+vendor_data <- vendors %>%
+  mutate(row_label = fct_reorder(row_label, -row_order),
+         dot_color = ifelse(row_label == "Microsoft", proj_colors[["highlight"]], proj_colors[["context"]]),
+         label_face = ifelse(row_label == "Microsoft", "bold", "plain"),
+         # Microsoft's dot sits at the right edge, so its label goes on the left
+         label_hjust = ifelse(row_label == "Microsoft", 1.08, -0.12))
+
+p3 <- ggplot(vendor_data, aes(x = count, y = row_label)) +
+  geom_point(aes(size = secondary, colour = dot_color)) +
+  geom_text(aes(label = mark_label, fontface = label_face, hjust = label_hjust), size = 9 / .pt) +
+  scale_colour_identity() +
+  scale_size_area(max_size = 6, breaks = c(1, 5, 10, 15, 21), name = "Agencies naming it") +
+  guides(size = guide_legend(override.aes = list(colour = proj_colors[["context"]]))) +
+  scale_x_continuous(limits = c(0, 140), breaks = seq(0, 140, 20), expand = expansion(mult = c(0.01, 0.02))) +
+  labs(title = "Microsoft is named in far more reported AI use cases than any other vendor",
+       subtitle = "2025 federal AI use cases naming each vendor. Dot size shows the number of agencies naming it. Top 15 vendors.",
+       x = "Use cases", y = NULL,
+       caption = "Vendor names are free text, split on separators and matched to firms (e.g., Copilot and Azure count as Microsoft). A firm counts once per use case.\nSource: OMB 2025 Federal Agency AI Use Case Inventory, github.com/ombegov.") +
+  theme_project(grid = "both") +
+  theme(axis.text.y = element_text(colour = proj_colors[["ink"]]),
+        legend.position = "right",
+        legend.justification = "top")
+
+p3
+ggsave("figures/prototype3_vendor_concentration.png", p3, width = 9, height = 5.6, dpi = 300, bg = "white")
+```

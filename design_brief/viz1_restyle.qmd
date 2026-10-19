@@ -1,0 +1,161 @@
+---
+title: "Restyling Visualization Exercise 1"
+subtitle: "Design Brief · PPOL 5202 · Who Builds Federal AI?"
+author: "Guo (Nora) Zhan"
+date: today
+format:
+  html:
+    embed-resources: true
+    lightbox: true
+    mainfont: '"Public Sans", "Helvetica Neue", Arial, sans-serif'
+  typst:
+    fig-format: png
+    mainfont: "Helvetica Neue"
+execute:
+  echo: false
+  message: false
+  warning: false
+---
+
+```{r}
+# Setup
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+
+use_cases <- read_csv("ai_use_cases.csv", show_col_types = FALSE)
+```
+
+```{r}
+# Data preparation: the same steps as Exercise 1, joined into one pipe
+stage_shares <- use_cases %>%
+  filter(year == 2025) %>%
+  filter(!is.na(classification), classification != "Other") %>%
+  filter(stage %in% c("Pre-deployment", "Pilot", "Deployed")) %>%
+  count(classification, stage) %>%
+  group_by(classification) %>%
+  mutate(total = sum(n),
+         share = n / total) %>%
+  ungroup() %>%
+  filter(total >= 30) %>%
+  mutate(type_label = paste0(classification, "  (", scales::comma(total), ")"),
+         stage = factor(stage, levels = c("Pre-deployment", "Pilot", "Deployed")))
+
+type_order <- stage_shares %>%
+  filter(stage == "Deployed") %>%
+  arrange(share) %>%
+  pull(type_label)
+
+stage_shares <- stage_shares %>%
+  mutate(type_label = factor(type_label, levels = type_order))
+```
+
+```{r}
+# Before: the Exercise 1 figure, rebuilt from the same code.
+# It is saved here, before the project theme is loaded, so nothing from the theme leaks into it.
+before_data <- stage_shares %>%
+  mutate(text_color = ifelse(stage == "Pre-deployment", "black", "white"))
+
+stage_colors <- c("Pre-deployment" = "#f5b08f",
+                  "Pilot" = "#eb6834",
+                  "Deployed" = "#b8461c")
+
+before_plot <- ggplot(before_data, aes(x = share, y = type_label, fill = stage)) +
+  geom_col(position = position_stack(reverse = TRUE), width = 0.7, color = "white") +
+  geom_text(aes(label = scales::percent(share, accuracy = 1), color = text_color),
+            position = position_stack(vjust = 0.5, reverse = TRUE), size = 3.2) +
+  scale_fill_manual(values = stage_colors) +
+  scale_color_identity() +
+  scale_x_continuous(labels = scales::percent, expand = c(0, 0)) +
+  labs(title = "Agentic AI is furthest from deployment; computer vision is closest",
+       subtitle = "Share of 2025 federal AI use cases at each stage, by type of AI. Number of use cases in parentheses.",
+       x = NULL, y = NULL, fill = NULL,
+       caption = "Retired use cases and types with fewer than 30 active cases are excluded.\nSource: OMB Federal Agency AI Use Case Inventory 2025, github.com/ombegov.") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "top",
+        legend.justification = "left",
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(face = "bold"),
+        plot.title.position = "plot",
+        plot.caption = element_text(hjust = 0, color = "grey40"),
+        plot.caption.position = "plot",
+        plot.margin = margin(10, 20, 10, 10))
+
+dir.create("figures", showWarnings = FALSE)
+ggsave("figures/viz1_before.png", before_plot, width = 9, height = 4.8, dpi = 300, bg = "white")
+```
+
+```{r}
+# Load my project colors, fonts, and theme
+source("theme_project.R")
+```
+
+```{r}
+# After: the same data and finding, rebuilt with my project theme
+# Percent labels: white and bold on the dark "Deployed" part,
+# dark and regular on the two lighter parts
+after_data <- stage_shares %>%
+  mutate(text_color = ifelse(stage == "Deployed", "white", proj_colors[["ink"]]),
+         text_face  = ifelse(stage == "Deployed", "bold", "plain"))
+
+# Instead of a legend: write each stage name above the middle of its part of the top bar
+top_bar <- after_data %>%
+  filter(type_label == last(type_order)) %>%
+  arrange(stage) %>%
+  mutate(center = cumsum(share) - share / 2)
+
+# Draw the chart
+after_plot <- ggplot(after_data, aes(x = share, y = type_label, fill = stage)) +
+  geom_col(position = position_stack(reverse = TRUE), width = 0.7,
+           colour = proj_colors[["paper"]], linewidth = 0.6) +
+  geom_text(aes(label = scales::percent(share, accuracy = 1), colour = text_color,
+                fontface = text_face, group = stage),
+            position = position_stack(vjust = 0.5, reverse = TRUE)) +
+  geom_text(data = top_bar,
+            aes(x = center, y = length(type_order) + 0.55, label = stage),
+            colour = proj_colors[["ink"]], fontface = "bold", vjust = 0,
+            inherit.aes = FALSE) +
+  scale_fill_stage(guide = "none") +
+  scale_colour_identity() +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.6, 1.1))) +
+  labs(title = "Agentic AI is furthest from deployment; computer vision is closest",
+       subtitle = "Share of each type's active 2025 use cases at each stage, as reported by agencies. Use cases in parentheses.",
+       x = NULL, y = NULL,
+       caption = "Stage is self-reported by agencies. Retired use cases, the \"Other\" type, and types with fewer than 30 active use cases are excluded.\nSource: OMB 2025 Federal Agency AI Use Case Inventory, github.com/ombegov.") +
+  theme_project(grid = "none") +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(colour = proj_colors[["ink"]]))
+
+ggsave("figures/viz1_after.png", after_plot, width = 9, height = 4.8, dpi = 300, bg = "white")
+```
+
+## Before and after
+
+The same data and the same finding: "Before" is the figure I submitted for Exercise 1, and "After" is the same figure rebuilt with my project theme (`theme_project.R`).
+
+```{r}
+#| layout-ncol: 2
+#| column: screen-inset
+#| fig-cap:
+#|   - "Before: Exercise 1 as submitted"
+#|   - "After: rebuilt with the project theme"
+#| fig-alt:
+#|   - "Original version: stacked bars in three shades of orange showing the stage of 2025 federal AI use cases by type of AI, with a legend on top and a percent axis."
+#|   - "Restyled version: stacked bars in a light-to-dark teal ramp showing the stage of 2025 federal AI use cases by type of AI. Stage names label the top bar directly. Computer vision has the largest deployed share (56 percent) and agentic AI the smallest (17 percent)."
+
+# Show the two saved PNGs as a pair
+knitr::include_graphics(c("figures/viz1_before.png", "figures/viz1_after.png"))
+```
+
+## Revision memo
+
+The data, the filters, and the main finding stay the same. Every percentage matches Exercise 1. I changed five things:
+
+1.  **Orange became teal.** In my project, teal is the color for the AI itself, and the warm coral means "bought from a vendor" (convention 2). Orange stage bars would look like vendor bars. Teal still runs from light to dark, so darker still means further along, and the order holds up in the color-blindness test. Teal also has no link to the red and blue that U.S. readers tie to political parties.
+2.  **The legend became labels on the chart.** The stage names now sit right above the top bar, so busy readers do not have to look back and forth between a legend and the bars.
+3.  **The percent axis is gone.** Every part of every bar already shows its number, so the axis only repeated it.
+4.  **The deployed numbers are bold.** The title is about deployment, so that is where the eye should land first. Only one thing is emphasized.
+5.  **The notes are clearer.** The subtitle now says "as reported by agencies" (convention 4), and the caption says agencies report stage themselves (convention 3) and lists everything left out (convention 1).
+
+Fonts, sizes, and colors now come from `theme_project()`, so this chart matches the rest of my project.
