@@ -18,9 +18,9 @@ execute:
 
 ```{r}
 # Setup
-options(tidyverse.quiet = TRUE)   # hide the tidyverse startup message
+options(tidyverse.quiet = TRUE)
 library(tidyverse)
-library(ggalluvial)               # draws the flow (Sankey-style) chart
+library(ggalluvial)
 
 # My project's colors, fonts, and theme (a copy of design_brief/theme_project.R)
 source("theme_project.R")
@@ -47,19 +47,24 @@ flows <- cases_2024 %>%
 # Step 4: name the 2025 status; no match means "Not found in 2025"
 flows <- flows %>%
   mutate(status_2025 = case_when(is.na(link_id)    ~ "Not found in 2025",
-                                 is.na(stage_2025) ~ "Stage not reported",
+                                 is.na(stage_2025) ~ "Not reported",
                                  .default = stage_2025))
 
 # Step 5: count use cases for each 2024 stage and 2025 status pair
 flow_counts <- flows %>%
   count(stage_2024, status_2025)
 
-# Step 6: put both sides in a fixed order, furthest along at the top
-flow_counts <- flow_counts %>%
-  mutate(stage_2024 = factor(stage_2024, levels = c("Deployed", "Pilot", "Pre-deployment")),
-         status_2025 = factor(status_2025,
-                              levels = c("Deployed", "Pilot", "Pre-deployment", "Retired",
-                                         "Stage not reported", "Not found in 2025")))
+# Step 6: one row per band per side, the long format ggalluvial expects.
+# Each band keeps its 2025 status for its color
+flow_long <- flow_counts %>%
+  mutate(band = row_number(), band_color = status_2025) %>%
+  rename(`2024 stage` = stage_2024, `2025 status` = status_2025) %>%
+  pivot_longer(c(`2024 stage`, `2025 status`), names_to = "side", values_to = "stage")
+
+# Step 7: one stage order shared by both sides, furthest along at the top
+flow_long <- flow_long %>%
+  mutate(stage = factor(stage, levels = c("Deployed", "Pilot", "Pre-deployment", "Retired",
+                                          "Not reported", "Not found in 2025")))
 ```
 
 ```{r}
@@ -67,20 +72,24 @@ flow_counts <- flow_counts %>%
 #| fig-height: 6
 #| fig-alt: "Flow chart from the 2024 stage of 1,987 federal AI use cases to their status in the 2025 inventory. 823 use cases, about 41 percent, cannot be matched to a 2025 use case. Of 892 deployed in 2024, 386 are still deployed in 2025. Of 287 pilots, 43 are deployed and 51 are still pilots."
 
-# Colors: the stage ramp from my theme for the three stages, grays for everything else
-status_colors <- c(pal_stage[c("Deployed", "Pilot", "Pre-deployment")],
-                   "Retired" = "#D3CEC6",
-                   "Stage not reported" = proj_colors[["missing"]],
-                   "Not found in 2025" = proj_colors[["context"]])
+# Colors: the stage colors from my theme (Retired is gray there), lighter grays for the rest
+status_colors <- c(pal_stage,
+                   "Not reported" = proj_colors[["missing"]],
+                   "Not found in 2025" = "#D9DDE2")
 
-# Share of 2024 use cases with no match, for the title
-not_found_share <- mean(flows$status_2025 == "Not found in 2025")
+# Band outlines: white, except a gray edge so the pale "Not reported" bands show on white
+band_outlines <- setNames(rep(proj_colors[["paper"]], length(status_colors)), names(status_colors))
+band_outlines[["Not reported"]] <- proj_colors[["context"]]
 
-flow_plot <- ggplot(flow_counts,
-                    aes(axis1 = stage_2024, axis2 = status_2025, y = n)) +
+# Number and share of 2024 use cases with no match, for the title
+not_found_n     <- sum(flows$status_2025 == "Not found in 2025")
+not_found_share <- not_found_n / nrow(flows)
+
+flow_plot <- ggplot(flow_long,
+                    aes(x = side, stratum = stage, alluvium = band, y = n)) +
   # Bands: one per 2024 stage and 2025 status pair, colored by the 2025 status
-  geom_alluvium(aes(fill = status_2025), width = 0.22, alpha = 0.85,
-                colour = proj_colors[["paper"]], linewidth = 0.2) +
+  geom_alluvium(aes(fill = band_color, colour = band_color), width = 0.22, alpha = 0.85,
+                linewidth = 0.2) +
   # Boxes: one per stage on each side
   geom_stratum(width = 0.22, fill = proj_colors[["paper"]],
                colour = proj_colors[["ink_soft"]], linewidth = 0.3) +
@@ -89,9 +98,11 @@ flow_plot <- ggplot(flow_counts,
             aes(label = paste0(after_stat(stratum), "  ", scales::comma(after_stat(count)))),
             size = 8.5 / .pt) +
   scale_fill_manual(values = status_colors, guide = "none") +
+  scale_colour_manual(values = band_outlines, guide = "none") +
   scale_x_discrete(limits = c("2024 stage", "2025 status"), expand = c(0.12, 0.12)) +
   labs(title = paste0("About ", scales::percent(not_found_share, accuracy = 1),
-                      " of 2024 federal AI use cases cannot be matched a year later"),
+                      " (", scales::comma(not_found_n), " of ", scales::comma(nrow(flows)),
+                      ") of 2024 federal AI use cases cannot be matched in 2025"),
        subtitle = "Flow of 1,987 federal AI use cases from their 2024 stage to their status in the 2025 inventory.\nBand width is the number of use cases.",
        x = NULL, y = NULL,
        caption = "2024 and 2025 use cases are matched by name within each agency (exact, or at least 80% similar). Stage is self-reported by agencies.\nRetired 2024 use cases are excluded. Source: OMB 2024 and 2025 Federal AI Use Case Inventories, github.com/ombegov.") +
@@ -112,16 +123,30 @@ ggsave("figures/viz2_pilot_flow.png", flow_plot,
 
 Each year, federal agencies report the artificial intelligence (AI) systems they use or are developing to the Office of Management and Budget (OMB), the White House office that oversees federal management. Each entry is a **use case**: one application of AI to one agency task. Agencies also report each use case's stage: *pre-deployment* (being planned, developed, or acquired), *pilot* (being tested on a limited basis), *deployed* (in regular operation), or *retired* (no longer in use).
 
-The figure follows every use case that was active in the 2024 inventory into the 2025 inventory. The left side groups them by their 2024 stage; the right side shows where each one stands in 2025. **Units:** each band's width is a number of use cases, out of 1,987 active in 2024. "Not found in 2025" means no 2025 use case at the same agency has a matching name.
+The figure follows every use case that was active in the 2024 inventory into the 2025 inventory. The left side groups them by their 2024 stage; the right side shows where each one stands in 2025. **Units:** each band's width is a number of use cases, out of 1,987 active in 2024. "Not found in 2025" means no 2025 use case at the same agency has a matching name. "Not reported" means a matching 2025 use case exists, but the agency left its stage blank (57 use cases).
 
 **Main takeaway.** A year later, about four in ten 2024 use cases (823 of 1,987) cannot be matched to the 2025 inventory. Among those that can be matched, deployed AI tends to stay deployed: 386 of the 513 matched deployed use cases (75%) are still deployed. Pilots move more slowly: of the 145 matched 2024 pilots, 43 are deployed and 51 are still pilots.
 
 **How to read this carefully.** "Not found" is not the same as "ended." A use case may have been renamed, merged with another, or dropped from the list. Part of the gap is one agency: the U.S. Agency for International Development (USAID) reported 104 active use cases in 2024 and filed no 2025 inventory. The comparison covers one year, so it shows where use cases stood in 2025, not how long each step takes. Stage is self-reported, and definitions may vary across agencies.
 
-**Data notes.** The two inventories share no ID, so 2024 and 2025 use cases are linked by name within the same agency: first exact matches after removing case and punctuation, then names at least 80% similar. Before matching, a tag the Department of the Interior added to its 2025 names ("[2024 INV#...]") is removed; without that step, only 6 of Interior's 180 use cases from 2024 are linked instead of 85. Of the 2,133 use cases in the 2024 inventory, the figure keeps the 1,987 at an active stage; 142 retired and 4 with no stage are excluded. The OMB inventories do not include the Department of Defense, so the figure covers civilian agencies only. The match is built in `code/02_build_data.Rmd` and saved as `data/keys/use_case_link_2024_2025.csv` in this project's GitHub repository. Sources: OMB 2024 Federal AI Use Case Inventory, <https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory>, and OMB 2025 Federal Agency AI Use Case Inventory, <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory>.
+**Data notes.** The two inventories share no ID, so 2024 and 2025 use cases are linked by name within the same agency: first exact matches after removing case and punctuation, then names at least 80% similar. Before matching, a tag the Department of the Interior added to its 2025 names ("\[2024 INV#...\]") is removed; without that step, only 6 of Interior's 180 use cases from 2024 are linked instead of 85. Of the 2,133 use cases in the 2024 inventory, the figure keeps the 1,987 at an active stage; 142 retired and 4 with no stage are excluded. Retired keeps its gray from the design brief; "Not found in 2025" uses a lighter gray so the two can be told apart. The OMB inventories do not include the Department of Defense, so the figure covers civilian agencies only. The match is built in `code/02_build_data.Rmd` and saved as `data/keys/use_case_link_2024_2025.csv` in this project's GitHub repository. Sources: OMB 2024 Federal AI Use Case Inventory, <https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory>, and OMB 2025 Federal Agency AI Use Case Inventory, <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory>.
 
 ## AI use disclosure
 
-I used Claude Opus 5.5 (through Claude Code) for this exercise. Claude drew several candidate charts of the 2024 to 2025 match (a waffle chart, a funnel, a dot chart by agency, and this flow chart), and I chose the flow chart. When Interior's pilots all came out unmatched, I asked Claude to find out why; it traced the problem to the "[2024 INV#...]" tag and added one step to `code/02_build_data.Rmd` to remove it before matching. Claude then drafted this Quarto document, including the data steps, the ggalluvial code, and the styling from my project theme.
+**Tool.** Claude Opus 5.5, used through Claude Code.
 
-I reviewed the code, ran it step by step, and checked the counts in the text against the data.
+**My role.** The most important decision behind this figure was to check the unmatched use cases instead of taking them at face value. In an early version, every Department of the Interior pilot came out as "Not found in 2025." An entire agency's pilots ending in the same year seemed unlikely, so I suspected the matching, not the agency, and asked Claude to look into the unmatched cases. The cause was a "\[2024 INV#...\]" tag that Interior added to its 2025 names. Once the tag is removed before matching, 85 of Interior's 180 use cases from 2024 are linked instead of 6. Without that check, the figure would have overstated how many use cases disappeared. The unmatched cases were not a finding to report; they were a problem to check first.
+
+I also chose the chart form from four candidates Claude drew (a waffle chart, a funnel, a dot chart by agency, and this flow chart). I asked for a review of the document against the Exercise 2 instructions and my design brief, and from that review I decided on four changes: Retired uses its gray from the design brief, "Not found" uses a lighter gray so the two stay distinct, the pale "Not reported" bands get a gray outline and the brief's label, and the title gives the count behind the percentage. When the code raised a ggalluvial warning, I asked for its cause to be fixed rather than the warning hidden.
+
+**Prompts** (paraphrased, in order):
+
+1.  Draw a few candidate charts of how 2024 use cases match to the 2025 inventory.
+2.  Check the unmatched use cases: why does every Interior pilot come out as "Not found"?
+3.  Write a Quarto document for the flow chart that uses my project theme.
+4.  Check the document against the Exercise 2 instructions and my design brief.
+5.  Fix the ggalluvial warning at its source; do not silence it.
+
+**What Claude did.** Claude traced the Interior problem to the tag and added one step to `code/02_build_data.Rmd` to remove it before matching. Claude wrote the data steps, the ggalluvial code, and the styling in this document, and made the changes listed above. For the warning, Claude reshaped the counts into the long format ggalluvial expects, with one stage order shared by both sides.
+
+**What I changed and checked.** I made small changes to Claude's code. I ran it chunk by chunk, read what each step does, and checked the counts in the text (823 not found, 386 of 513 deployed still deployed, 43 and 51 of 145 pilots) against what the code returns.
