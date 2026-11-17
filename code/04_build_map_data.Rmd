@@ -1,0 +1,298 @@
+---
+title: "04 · Build the map data"
+subtitle: "Who Builds Federal AI? · PPOL 5202"
+author: "Guo (Nora) Zhan"
+output:
+  html_document:
+    toc: true
+    df_print: kable
+---
+
+This notebook builds the small files behind the map in Visualization Exercise 3: how many laws on artificial intelligence (AI) each state enacted in 2025 and 2026, and how many of them set rules for private companies' use of AI. The source is the National Conference of State Legislatures (NCSL) Artificial Intelligence Legislation Database; the map outlines come from the Census Bureau.
+
+| File | One row is | Source |
+|----|----|----|
+| `data/processed/state_ai_laws.csv` | one state or DC: AI bills introduced and enacted in 2025 and 2026, and enacted bills NCSL tags "Private Sector Use" | NCSL |
+| `data/processed/state_ai_passage.csv` | one state or DC: AI bills and AI bills enacted in 2025–2026 (counted once), and all bills and all bills enacted in its 2025–2026 regular sessions | NCSL, LegiScan |
+| `data/processed/us_states_map.gpkg` | one state or DC, as a map outline | Census |
+
+```{r setup, message = FALSE}
+library(tidyverse)
+library(pdftools)
+library(here)
+library(httr)
+library(jsonlite)
+library(sf)
+library(tigris)
+
+raw      <- here("data", "raw")
+proc     <- here("data", "processed")
+ncsl     <- file.path(raw, "ncsl")
+legiscan <- file.path(raw, "legiscan")
+if (!dir.exists(legiscan)) dir.create(legiscan)
+options(tigris_use_cache = TRUE)
+```
+
+# 1. The NCSL search results
+
+NCSL's database (<https://www.ncsl.org/financial-services/artificial-intelligence-legislation-database>) tracks every AI bill introduced in the states, DC, and the territories from 2025 on, and is updated monthly. The site does not allow automated downloads and has no export button, so the search results were saved by hand from a web browser as PDF files on November 10, 2026, one for each year (filters: all topics, all states, year 2025 or 2026). The files are kept in `data/raw/ncsl/`; nothing in them was edited.
+
+Each bill in the PDF is a block of lines like this:
+
+```
+AL H 169
+2025
+Public Education
+Status: Failed - Adjourned - House Ways and Means Education Committee
+Date of Last Action: 2/5/2025
+Author: Garrett (R)
+Topics: Appropriations, Education Use
+Summary: ...
+```
+
+The parser below finds each block by its first two lines (a bill number such as "AL H 169", then a year), and reads the title and the Status, Topics, and Summary fields. A field can wrap onto the next line, so each one runs until the next field name.
+
+```{r parse}
+parse_ncsl <- function(file) {
+  lines <- pdf_text(file) %>%
+    str_split("\n") %>%
+    unlist() %>%
+    str_trim()
+
+  # Drop the browser's page header and footer
+  lines <- lines[!str_detect(lines, "Search Results$|^about:blank")]
+
+  # A bill starts with "XX CH 123" followed by a line with the year
+  starts <- which(str_detect(lines, "^[A-Z]{2} [A-Z]+ \\d+[A-Z]?$") &
+                    str_detect(lead(lines), "^\\d{4}$"))
+  ends <- c(starts[-1] - 1, length(lines))
+
+  map2_dfr(starts, ends, function(from, to) {
+    block <- lines[from:to]
+    # Text of one field, from its name up to the next field's name
+    field <- function(name, next_name) {
+      first <- which(str_detect(block, paste0("^", name, ":")))[1]
+      if (is.na(first)) return(NA_character_)
+      last <- which(str_detect(block, paste0("^", next_name, ":")) & seq_along(block) > first)[1] - 1
+      if (is.na(last)) last <- first
+      block[first:last] %>%
+        paste(collapse = " ") %>%
+        str_remove(paste0("^", name, ":")) %>%
+        str_squish()
+    }
+    tibble(bill_id = block[1],
+           year    = as.integer(block[2]),
+           title   = block[3],
+           status  = field("Status", "Date of Last Action"),
+           topics  = field("Topics", "Summary"),
+           summary = field("Summary", "History"))
+  })
+}
+
+bills <- list.files(ncsl, pattern = "^ai_legislation_search_\\d{4}\\.pdf$", full.names = TRUE) %>%
+  map_dfr(parse_ncsl) %>%
+  mutate(state   = str_sub(bill_id, 1, 2),
+         enacted = str_detect(status, "^Enacted"),
+         private_sector = str_detect(coalesce(topics, ""), "Private Sector Use"))
+```
+
+A check against the totals NCSL prints at the top of each file (1,262 bills in 2025 and 1,585 in 2026), and the statuses found:
+
+```{r check}
+bills %>% count(year)
+
+bills %>%
+  mutate(status = str_extract(status, "^[^-]+") %>% str_trim()) %>%
+  count(year, status) %>%
+  pivot_wider(names_from = year, values_from = n, values_fill = 0)
+```
+
+A spot check that late-year laws are there: California's SB 53 (large AI model developers) and SB 243 (companion chatbots) were signed in September and October 2025.
+
+```{r spot-check}
+bills %>%
+  filter(bill_id %in% c("CA S 53", "CA S 243")) %>%
+  select(bill_id, year, status, topics)
+```
+
+# 2. Count by state
+
+**Enacted** means NCSL's status begins with "Enacted": signed into law (or law without a signature). Resolutions that were "Adopted" are not laws and are not counted. **Private-sector laws** are enacted bills that NCSL tags "Private Sector Use": laws that set rules for how businesses develop or use AI, as opposed to laws about the government's own use, criminal penalties, studies, or funding. A law can carry several tags.
+
+Five states held no regular legislative session in 2026 (Arkansas, Montana, Nevada, North Dakota, and Texas meet in odd years, or only for budgets in even years), so NCSL lists no 2026 bills for them. `session_2026` marks the states with at least one 2026 bill.
+
+```{r by-state}
+state_laws <- bills %>%
+  filter(state %in% c(state.abb, "DC")) %>%
+  group_by(state) %>%
+  summarise(introduced_2025 = sum(year == 2025),
+            enacted_2025    = sum(year == 2025 & enacted),
+            private_2025    = sum(year == 2025 & enacted & private_sector),
+            introduced_2026 = sum(year == 2026),
+            enacted_2026    = sum(year == 2026 & enacted),
+            private_2026    = sum(year == 2026 & enacted & private_sector)) %>%
+  # States with no bills at all in the files still get a row
+  right_join(tibble(state = c(state.abb, "DC")), by = "state") %>%
+  mutate(across(-state, \(x) replace_na(x, 0L)),
+         session_2026 = introduced_2026 > 0) %>%
+  arrange(state)
+
+state_laws %>%
+  summarise(across(c(enacted_2025, private_2025, enacted_2026, private_2026), sum),
+            states_private_2025 = sum(private_2025 > 0),
+            states_private_2026 = sum(private_2026 > 0),
+            states_no_session_2026 = sum(!session_2026))
+
+state_laws %>% filter(!session_2026) %>% pull(state)
+```
+
+# 3. How often AI bills pass, compared with all bills
+
+Some legislatures introduce far more bills than they pass, on every subject. To tell whether a state treats AI bills differently, its AI passage rate is compared with its passage rate for all bills.
+
+## AI bills, counted once
+
+A bill in a two-year session that was carried over from 2025 into 2026 appears in both NCSL files; only its 2026 row is kept. States that number bills anew each year (such as Florida) can reuse a number in 2026 for a different bill, so a number is only merged when its 2025 status says "Carryover." Resolutions and memorials (bill types ending in R or M, such as HR, SJR, or HM) are left out, because they cannot become law. So are Iowa's study bills (HSB, SSB), drafts that are renumbered as regular bills if they move forward. Two more kinds of measures are left out on both sides of the comparison, AI bills and all bills, using the same text rules (defined here and used again below): honorary measures that are numbered like bills (South Carolina, for example, numbers its resolutions honoring people and teams the same way as its bills), and local bills that apply to one county or city (common in Georgia and Tennessee), which pass almost automatically.
+
+```{r ai-unique}
+not_a_bill <- "^[A-Z]?[CJ]?R$|M$|^(HSB|SSB)$"
+
+# Honorary measures: set phrases that mark commemorations and resolutions
+honorary <- "\\bcommend|congratulat|condolence|profound sorrow|privilege of the floor|recogni[sz]e and (honor|commend|congratulate)|honou?r and (recogni[sz]e|congratulate)|\\b(concurrent|joint|house|senate|memorial) resolution\\b|^(a )?resolution\\b|celebrate the|in memory of|request the department|request that the"
+# Local bills: titles that start with one county, parish, city, or town, or amend a private act
+local <- "^[A-Z][A-Za-z.' -]+ (County|Parish)( Board| School| Commission| Sheriff| Probate| Magistrate| State Court|;|:| -)|^(City|Town|Village) of |Private Acts?\\b"
+
+is_honorary <- function(title, description) str_detect(str_to_lower(paste(title, coalesce(description, ""))), honorary)
+is_local    <- function(title) str_detect(title, local)
+
+carried_over <- bills %>%
+  filter(year == 2025, str_detect(status, "Carryover")) %>%
+  semi_join(filter(bills, year == 2026), by = "bill_id") %>%
+  pull(bill_id)
+
+ai_passage <- bills %>%
+  mutate(bill_type = word(bill_id, 2)) %>%
+  filter(!str_detect(bill_type, not_a_bill),
+         state %in% c(state.abb, "DC"),
+         !(year == 2025 & bill_id %in% carried_over),
+         !is_honorary(title, summary),
+         !is_local(title)) %>%
+  group_by(state) %>%
+  summarise(ai_bills = n(), ai_enacted = sum(enacted))
+
+ai_passage %>% summarise(ai_bills = sum(ai_bills), ai_enacted = sum(ai_enacted))
+```
+
+## All bills, from LegiScan
+
+LegiScan (<https://legiscan.com>) tracks every bill in every state legislature, and its API is free with a registered key. For each state, the code asks for the list of sessions and keeps the regular (not special) sessions that fall in 2025 or 2026. For each of those sessions it downloads LegiScan's dataset, a zip file with every bill's number, title, description, and current status in CSV format. The responses and zip files are saved in `data/raw/legiscan/`; a file that is already there is not downloaded again, so the key is only needed the first time. The key is read from the `LEGISCAN_API_KEY` environment variable and never printed. LegiScan data are licensed under CC BY 4.0.
+
+```{r legiscan-download}
+legiscan_call <- function(...) {
+  GET("https://api.legiscan.com/",
+      query = list(key = Sys.getenv("LEGISCAN_API_KEY"), ...)) %>%
+    content(as = "text", encoding = "UTF-8")
+}
+
+# Read a saved response, or download and save it first
+cached <- function(file, ...) {
+  path <- file.path(legiscan, file)
+  if (!file.exists(path)) {
+    response <- legiscan_call(...)
+    stopifnot(fromJSON(response)$status == "OK")
+    write_file(response, path)
+    Sys.sleep(0.5)
+  }
+  fromJSON(read_file(path))
+}
+
+sessions <- map_dfr(c(state.abb, "DC"), function(st) {
+  cached(paste0("sessions_", st, ".json"), op = "getSessionList", state = st)$sessions %>%
+    as_tibble() %>%
+    select(session_id, state = state_abbr, year_start, year_end, special, session_name)
+}) %>%
+  filter(special == 0, year_start <= 2026, year_end >= 2025)
+
+sessions %>% count(state) %>% count(sessions_per_state = n)
+```
+
+LegiScan's status codes are 0 not yet acted on (a prefiled bill), 1 introduced, 2 passed one chamber, 3 passed both chambers, 4 passed (became law), 5 vetoed, and 6 failed. A bill counts as enacted when its status is 4. States label resolutions in many ways (HR and SJR, but also J and K in New York, HC and SC in Mississippi, HJ and SJ in Montana), so instead of listing every resolution type, the code keeps only the number prefixes that mark bills: HB, SB, H, S, A, AB, HF and SF (Iowa, Minnesota), LD (Maine), LB (Nebraska), B (DC), and two small California and Missouri types. Honorary measures and local bills are then left out with the same rules as the AI bills.
+
+```{r legiscan-bills}
+dataset_dir <- file.path(legiscan, "datasets")
+if (!dir.exists(dataset_dir)) dir.create(dataset_dir)
+
+# The list of datasets gives each session's access key
+dataset_list <- map_dfr(c(2025, 2026), function(yr) {
+  cached(paste0("datasetlist_", yr, ".json"), op = "getDatasetList", year = yr)$datasetlist %>%
+    as_tibble() %>%
+    select(session_id, access_key)
+}) %>%
+  distinct(session_id, .keep_all = TRUE)
+
+# Download each session's CSV dataset once, then read its bills.csv
+read_dataset <- function(id) {
+  zip_file <- file.path(dataset_dir, paste0("dataset_", id, ".zip"))
+  if (!file.exists(zip_file)) {
+    key <- dataset_list$access_key[dataset_list$session_id == id]
+    response <- fromJSON(legiscan_call(op = "getDataset", id = id, access_key = key, format = "csv"))
+    stopifnot(response$status == "OK")
+    writeBin(base64_dec(response$dataset$zip), zip_file)
+    Sys.sleep(0.5)
+  }
+  bills_csv <- str_subset(unzip(zip_file, list = TRUE)$Name, "/csv/bills\\.csv$")
+  # LegiScan's CSV files escape quotation marks inside text with a backslash (\"),
+  # not by doubling them (""), so tell the reader to expect backslashes
+  read_delim(unz(zip_file, bills_csv), delim = ",", col_types = cols(.default = "c"),
+             escape_backslash = TRUE, escape_double = FALSE) %>%
+    transmute(session_id = id, number = bill_number, status = as.integer(status),
+              title, description)
+}
+
+all_bills <- map_dfr(sessions$session_id, read_dataset) %>%
+  left_join(select(sessions, session_id, state), by = "session_id") %>%
+  mutate(bill_type = str_extract(number, "^[A-Z]+"))
+
+bill_prefixes <- c("HB", "SB", "H", "S", "A", "AB", "HF", "SF", "LD", "LB", "B", "ABX", "HCB")
+
+all_bills <- all_bills %>%
+  filter(bill_type %in% bill_prefixes) %>%
+  mutate(honorary = is_honorary(title, description),
+         local    = is_local(title))
+
+# How many measures each rule removes, in the states where they matter most
+all_bills %>%
+  filter(state %in% c("SC", "GA", "TN", "CT", "MN")) %>%
+  group_by(state) %>%
+  summarise(bills = n(), honorary = sum(honorary), local = sum(local))
+
+all_passage <- all_bills %>%
+  filter(!honorary, !local) %>%
+  group_by(state) %>%
+  summarise(all_bills = n(), all_enacted = sum(status == 4))
+
+all_passage %>% summarise(all_bills = sum(all_bills), all_enacted = sum(all_enacted))
+
+passage <- ai_passage %>%
+  full_join(all_passage, by = "state") %>%
+  mutate(across(-state, \(x) replace_na(x, 0L)))
+```
+
+# 4. Map outlines
+
+Census cartographic boundary files for 2023 (1:20 million). `shift_geometry()` moves Alaska and Hawaii below the lower 48 and puts the map in an equal-area (Albers) projection, so a state's size on the map is proportional to its land area.
+
+```{r geometry, message = FALSE}
+states <- states(cb = TRUE, resolution = "20m", year = 2023, progress_bar = FALSE) %>%
+  filter(STUSPS %in% c(state.abb, "DC")) %>%
+  shift_geometry() %>%
+  select(state = STUSPS, geometry)
+```
+
+# 5. Save
+
+```{r save}
+write_csv(state_laws, file.path(proc, "state_ai_laws.csv"), na = "")
+write_csv(passage, file.path(proc, "state_ai_passage.csv"), na = "")
+st_write(states, file.path(proc, "us_states_map.gpkg"), delete_dsn = TRUE, quiet = TRUE)
+```

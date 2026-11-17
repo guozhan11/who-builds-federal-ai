@@ -42,6 +42,10 @@ The figure above is the restyled version from the design brief; the version subm
 
 ![Flow of 2024 federal AI use cases into the 2025 inventory](r_viz/viz2/figures/viz2_pilot_flow.png)
 
+**3. State AI bills pass about as often as other bills, except in four Southern states.** In the 2025–2026 state legislative sessions, 17.1% of AI bills became law, against 15.9% of all bills. Tennessee (20% vs. 44%), Virginia (21% vs. 39%), Louisiana (33% vs. 55%), and Georgia (10% vs. 25%) passed AI bills at only 40% to 60% of their usual rate; California, Connecticut, Missouri, and Minnesota passed them more often. This exercise uses state data because the OMB inventories have no locations. ([`viz3_ai_bill_passage.qmd`](r_viz/viz3/viz3_ai_bill_passage.qmd))
+
+![Share of AI bills vs. all bills enacted, by state, 2025–2026](r_viz/viz3/figures/viz3_ai_bill_passage.png)
+
 ## The design brief
 
 [`design_brief/`](design_brief) sets the visual system every later figure uses: a named color palette, one typeface with fallbacks, and six chart conventions (`design_brief.qmd`). `theme_project.R` turns those choices into palettes and a `theme_project()` function that each exercise sources. `viz1_restyle.qmd` rebuilds the first exercise with the system as a before-and-after pair, and `proposal_restyle.qmd` rebuilds the three proposal prototypes. Every figure in this README uses it: blue for AI built in-house, coral for AI bought from a vendor, and teal for the AI itself (its stage, counts, and the one highlighted item).
@@ -51,9 +55,9 @@ The figure above is the restyled version from the design brief; the version subm
 ```         
 proposal/     the proposal (Word and PDF), the packaged Tableau workbook,
               the original chart images, and the data behind each chart
-code/         three R Markdown notebooks that download and build the data
+code/         four R Markdown notebooks that download and build the data
 data/         the analysis tables the notebooks produce
-r_viz/        one folder per R visualization exercise (viz1/, viz2/), each with its
+r_viz/        one folder per R visualization exercise (viz1/ to viz3/), each with its
               Quarto document and figure
 design_brief/ the design brief, the project theme script, and the restyled
               Exercise 1 and proposal charts
@@ -61,26 +65,30 @@ design_brief/ the design brief, the project theme script, and the restyled
 Data Access Links GitHub.docx   submission document linking to the two analysis tables
 ```
 
-The figures use one analysis table, `ai_use_cases.csv`. The notebooks also build `workforce.csv` from OPM Federal Workforce Data, left from an earlier plan to set AI next to technical hiring; no current figure uses it.
+The AI figures use one analysis table, `ai_use_cases.csv`. The Exercise 3 map uses state legislative data instead: AI bills from the National Conference of State Legislatures (NCSL), all bills from LegiScan, and Census boundaries. The notebooks also build `workforce.csv` from OPM data, left from an earlier plan to set AI next to technical hiring; no current figure uses it.
 
 | File | One row is |
 |------------------------------------|------------------------------------|
 | `data/processed/ai_use_cases.csv` | one AI use case in one inventory year (2023, 2024, 2025) |
 | `data/processed/workforce.csv` | one count of federal employees: headcount at a snapshot, or hires or exits in a month |
+| `data/processed/state_ai_passage.csv` | one state or DC: AI bills and AI bills enacted, and all bills and all bills enacted, in its 2025–2026 sessions |
+| `data/processed/state_ai_laws.csv` | one state or DC: AI bills introduced and enacted in 2025 and in 2026, including laws NCSL tags "Private Sector Use" (not used in a current figure) |
+| `data/processed/us_states_map.gpkg` | one state or DC, as a map outline |
 
 The two tables are never merged: they measure different things, an AI use case versus a count of people. The only join is inside the OMB data, linking a 2024 use case to the same use case in 2025 by name. That match is saved as its own file, `data/keys/use_case_link_2024_2025.csv`, so it can be inspected and challenged.
 
 ## Reproducing the data
 
-Knit the three notebooks in `code/` in order, from RStudio or the R console:
+Knit the four notebooks in `code/` in order, from RStudio or the R console:
 
 ``` r
 rmarkdown::render("code/01_download_data.Rmd")        # download the raw files (~380 MB)
 rmarkdown::render("code/02_build_data.Rmd")           # build the two analysis tables
 rmarkdown::render("code/03_build_tableau_data.Rmd")   # build the three chart tables
+rmarkdown::render("code/04_build_map_data.Rmd")       # read NCSL files, download LegiScan, build the Exercise 3 map data
 ```
 
-The first notebook skips files it has already downloaded, and the months are fixed at January 2024 through July 2026, so a later run reproduces the figures above. OPM revises recent months, so re-downloaded counts can shift slightly; the manifests saved with the raw files record the versions used. Paths are resolved with `here::here()`, so the notebooks run from any working directory. R packages: `tidyverse`, `arrow`, `jsonlite`, `here`, `rmarkdown`.
+The first notebook skips files it has already downloaded, and the months are fixed at January 2024 through July 2026, so a later run reproduces the figures above. OPM revises recent months, so re-downloaded counts can shift slightly; the manifests saved with the raw files record the versions used. Paths are resolved with `here::here()`, so the notebooks run from any working directory. R packages: `tidyverse`, `arrow`, `jsonlite`, `here`, `rmarkdown`; the map also needs `pdftools`, `httr`, `sf`, `tigris`, and `ggrepel`. Downloading LegiScan data needs a free API key in the `LEGISCAN_API_KEY` environment variable; the saved files let the map render without one.
 
 ## Sources
 
@@ -89,10 +97,14 @@ The first notebook skips files it has already downloaded, and the months are fix
 | OPM Federal Workforce Data (EHRI status and dynamics files; built into `workforce.csv`, not used in current figures) | <https://data.opm.gov/get-data/data-downloads> |
 | OMB 2025 Federal Agency AI Use Case Inventory | <https://github.com/ombegov/2025-Federal-Agency-AI-Use-Case-Inventory> |
 | OMB 2023 and 2024 Federal AI Use Case Inventories | <https://github.com/ombegov/2024-Federal-AI-Use-Case-Inventory> |
+| U.S. Census Bureau cartographic boundary files, 2023 (states and Core Based Statistical Areas, via `tigris`) | <https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html> |
+| NCSL Artificial Intelligence Legislation Database (search results for 2025 and 2026, saved as PDF November 10, 2026) | <https://www.ncsl.org/financial-services/artificial-intelligence-legislation-database> |
+| LegiScan API (bills in 2025–2026 regular sessions; LegiScan LLC, CC BY 4.0) | <https://legiscan.com> |
 
 ## Judgment calls worth knowing about
 
 - **No data file is edited by hand.** Every table in `data/` and `proposal/tableau_data/` is written by a notebook. Only the workbook layout and formatting were set by hand in Tableau.
 - **Linking 2024 to 2025 use cases** relies on names, because the inventories share no stable ID. Names that match after normalization are linked outright; the rest are linked when they are at least 80% similar, a threshold chosen by reading sampled pairs. Section A4 of `02_build_data.Rmd` shows that check. The Department of the Interior added its 2024 inventory number to many 2025 names (e.g., "[2024 INV#WO0000000110496]"); that tag is removed before matching, which links 85 of Interior's 180 use cases from 2024 instead of 6.
 - **The Department of Defense is not in the OMB inventories,** so every figure covers civilian agencies only. It is also left out of `workforce.csv`, because several of its components did not submit June and July 2026 data.
+- **The Exercise 3 map compares each state with its own baseline.** A count of AI laws mostly shows which legislatures pass many bills, so the map compares the share of a state's AI bills that became law with the share of all its bills. Both sides leave out resolutions, honorary measures numbered like bills (South Carolina and Rhode Island), and local bills (Georgia and Tennessee), using set phrases in titles and descriptions; before that cleaning, South Carolina wrongly appeared to hold AI bills back. NCSL's database has no download option, so its search results were saved by hand as PDFs and parsed in `code/04_build_map_data.Rmd`.
 - **The 2023 inventory is read as UTF-8 and the 2024 inventory as Windows-1252**, the encodings the files actually use.

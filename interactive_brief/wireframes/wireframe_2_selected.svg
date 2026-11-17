@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="640" viewBox="0 0 1000 640"><defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b5462f"/></marker></defs><rect width="1000" height="640" fill="white"/><rect x="10" y="10" width="980" height="620" rx="10" fill="none" stroke="#333" stroke-width="2"/><rect x="30" y="28" width="940" height="62" rx="6" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="46" y="54" font-size="16" fill="#333" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Within the same agency, the gap between bought and in-house AI shrinks from 28 points to about 14</text>
+<text x="46" y="76" font-size="12.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Selected: HHS. Other agencies fade; the two summary rows stay as the reference point.</text>
+<rect x="30" y="118" width="470" height="440" rx="6" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="6 4"/>
+<line x1="205.0" y1="152" x2="205.0" y2="480" stroke="#d6d6d6"/>
+<text x="205.0" y="146" font-size="11" fill="#888" text-anchor="middle" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">0%</text>
+<line x1="315.0" y1="152" x2="315.0" y2="480" stroke="#d6d6d6"/>
+<text x="315.0" y="146" font-size="11" fill="#888" text-anchor="middle" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">50%</text>
+<line x1="425.0" y1="152" x2="425.0" y2="480" stroke="#d6d6d6"/>
+<text x="425.0" y="146" font-size="11" fill="#888" text-anchor="middle" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">100%</text>
+<text x="193" y="174" font-size="12.5" fill="#333" text-anchor="end" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">All agencies</text>
+<line x1="326.0" y1="170" x2="387.6" y2="170" stroke="#333" stroke-width="2"/>
+<circle cx="326.0" cy="170" r="6" fill="#333" stroke="#333" stroke-width="2"/>
+<rect x="381.6" y="164" width="12" height="12" fill="#333" stroke="#333" stroke-width="2"/>
+<text x="316.0" y="174" font-size="10.5" fill="#555" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">55% (505)</text>
+<text x="397.6" y="174" font-size="10.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">83% (552)</text>
+<text x="193" y="200" font-size="12.5" fill="#333" text-anchor="end" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Same agency mix</text>
+<line x1="319.4" y1="196" x2="350.2" y2="196" stroke="#333" stroke-width="2"/>
+<circle cx="319.4" cy="196" r="6" fill="#333" stroke="#333" stroke-width="2"/>
+<rect x="344.2" y="190" width="12" height="12" fill="#333" stroke="#333" stroke-width="2"/>
+<text x="309.4" y="200" font-size="10.5" fill="#555" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">52%</text>
+<text x="360.2" y="200" font-size="10.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">66%</text>
+<line x1="53" y1="218" x2="425" y2="218" stroke="#888" stroke-dasharray="3 3"/>
+<text x="193" y="240" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Treasury</text>
+<line x1="275.4" y1="236" x2="356.8" y2="236" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="275.4" cy="236" r="6" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="350.8" y="230" width="12" height="12" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<text x="265.4" y="240" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">32% (19)</text>
+<text x="366.8" y="240" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">69% (13)</text>
+<rect x="48" y="248" width="395" height="26" rx="4" fill="#f1f1f1" stroke="#333" stroke-width="2"/>
+<text x="193" y="266" font-size="12.5" fill="#333" text-anchor="end" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">HHS</text>
+<line x1="317.2" y1="262" x2="381.0" y2="262" stroke="#333" stroke-width="2"/>
+<circle cx="317.2" cy="262" r="6" fill="#333" stroke="#333" stroke-width="2"/>
+<rect x="375.0" y="256" width="12" height="12" fill="#333" stroke="#333" stroke-width="2"/>
+<text x="307.2" y="266" font-size="10.5" fill="#555" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">51% (81)</text>
+<text x="391.0" y="266" font-size="10.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">80% (51)</text>
+<text x="193" y="292" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">VA</text>
+<line x1="374.4" y1="288" x2="407.4" y2="288" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="374.4" cy="288" r="6" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="401.4" y="282" width="12" height="12" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<text x="364.4" y="292" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">77% (30)</text>
+<text x="417.4" y="292" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">92% (106)</text>
+<text x="193" y="318" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">USDA</text>
+<line x1="293.0" y1="314" x2="326.0" y2="314" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="293.0" cy="314" r="6" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="320.0" y="308" width="12" height="12" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<text x="283.0" y="318" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">40% (52)</text>
+<text x="336.0" y="318" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">55% (11)</text>
+<text x="193" y="344" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Energy</text>
+<line x1="352.4" y1="340" x2="376.6" y2="340" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="352.4" cy="340" r="6" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="370.6" y="334" width="12" height="12" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<text x="342.4" y="344" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">67% (49)</text>
+<text x="386.6" y="344" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">78% (78)</text>
+<text x="193" y="370" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Interior</text>
+<line x1="273.2" y1="366" x2="284.2" y2="366" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="273.2" cy="366" r="6" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="278.2" y="360" width="12" height="12" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<text x="263.2" y="370" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">31% (108)</text>
+<text x="294.2" y="370" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">36% (14)</text>
+<text x="193" y="396" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Justice</text>
+<line x1="394.2" y1="392" x2="398.6" y2="392" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="394.2" cy="392" r="6" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="392.6" y="386" width="12" height="12" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<text x="384.2" y="396" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">86% (14)</text>
+<text x="408.6" y="396" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">88% (153)</text>
+<text x="193" y="422" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">DHS</text>
+<line x1="405.2" y1="418" x2="409.6" y2="418" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="405.2" cy="418" r="6" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="403.6" y="412" width="12" height="12" fill="#d6d6d6" stroke="#d6d6d6" stroke-width="2"/>
+<text x="395.2" y="422" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">91% (23)</text>
+<text x="419.6" y="422" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">93% (44)</text>
+<text x="193" y="448" font-size="12.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">SSA</text>
+<line x1="403.0" y1="444" x2="396.4" y2="444" stroke="#d6d6d6" stroke-width="2"/>
+<circle cx="403.0" cy="444" r="6" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<rect x="390.4" y="438" width="12" height="12" fill="white" stroke="#d6d6d6" stroke-width="2"/>
+<text x="386.4" y="448" font-size="10.5" fill="#888" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">87% (15)</text>
+<text x="413.0" y="448" font-size="10.5" fill="#888" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">90% (10)</text>
+<rect x="52" y="500" width="150" height="34" rx="6" fill="#f7f7f7" stroke="#888" stroke-width="1.5"/>
+<text x="66" y="522" font-size="13" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">✕  Clear selection</text>
+<circle cx="202" cy="500" r="11" fill="#b5462f"/><text x="202" y="504.5" font-size="13" fill="white" text-anchor="middle" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">3</text>
+<text x="216" y="522" font-size="12.5" fill="#b5462f" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Way back: Clear, Esc, or click the empty chart</text>
+<rect x="520" y="118" width="450" height="440" rx="6" fill="none" stroke="#333" stroke-width="2"/>
+<text x="538" y="146" font-size="15" fill="#333" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">HHS: Health and Human Services</text>
+<text x="538" y="172" font-size="13" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">In-house: 41 of 81 deployed (51%)</text>
+<text x="538" y="192" font-size="13" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Bought:   41 of 51 deployed (80%)</text>
+<text x="538" y="212" font-size="11.5" fill="#555" text-anchor="start" font-weight="normal" font-style="italic" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Gap 30 points; government-wide, same-agency gap is ~14</text>
+<text x="538" y="242" font-size="12.5" fill="#333" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">By type of AI (deployed of total)</text>
+<text x="800" y="242" font-size="12" fill="#555" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">In-house</text><text x="900" y="242" font-size="12" fill="#555" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Bought</text>
+<text x="538" y="264" font-size="12.5" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Classical ML</text><text x="800" y="264" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">16 / 22</text><text x="900" y="264" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">8 / 9</text>
+<text x="538" y="284" font-size="12.5" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">NLP</text><text x="800" y="284" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">16 / 34</text><text x="900" y="284" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">9 / 12</text>
+<text x="538" y="304" font-size="12.5" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Generative AI</text><text x="800" y="304" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">8 / 22</text><text x="900" y="304" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">14 / 18</text>
+<text x="538" y="324" font-size="12.5" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Computer vision</text><text x="800" y="324" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">0 / 1</text><text x="900" y="324" font-size="12.5" fill="#333" text-anchor="end" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">8 / 8</text>
+<text x="538" y="352" font-size="11" fill="#888" text-anchor="start" font-weight="normal" font-style="italic" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Counts, not percentages, when a group is small</text>
+<rect x="538" y="366" width="200" height="32" rx="6" fill="#f7f7f7" stroke="#888" stroke-width="1.5"/>
+<text x="552" y="387" font-size="12.5" fill="#333" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">List the 40 in-house pilots</text>
+<circle cx="738" cy="366" r="11" fill="#b5462f"/><text x="738" y="370.5" font-size="13" fill="white" text-anchor="middle" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">2</text>
+<rect x="538" y="410" width="414" height="128" rx="6" fill="none" stroke="#888" stroke-width="1.5" stroke-dasharray="6 4"/>
+<text x="552" y="432" font-size="12" fill="#888" text-anchor="start" font-weight="normal" font-style="italic" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Search…</text>
+<text x="552" y="456" font-size="11.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Detecting Stimulant and Opioid Misuse …   ·  NLP</text>
+<text x="552" y="476" font-size="11.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">DGMH AI Chatbot   ·  Generative AI</text>
+<text x="552" y="496" font-size="11.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Autocoding to Support Adverse Drug Event …   ·  Classical ML</text>
+<text x="552" y="516" font-size="11.5" fill="#555" text-anchor="start" font-weight="normal" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">… 37 more</text>
+<text x="520" y="578" font-size="12.5" fill="#b5462f" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">D  Detail revealed by interaction ①: panel opens on the right</text>
+<text x="520" y="600" font-size="12.5" fill="#b5462f" text-anchor="start" font-weight="bold" font-style="normal" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">Interaction ② reveals the use case list inside the panel</text></svg>

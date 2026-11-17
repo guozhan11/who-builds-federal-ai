@@ -1,0 +1,225 @@
+---
+title: "Do State AI Bills Pass More or Less Often Than Other Bills?"
+subtitle: "Visualization Exercise 3 · PPOL 5202 · Who Builds Federal AI?"
+author: "Guo (Nora) Zhan"
+date: today
+format:
+  html:
+    embed-resources: true
+    mainfont: '"Public Sans", "Helvetica Neue", Arial, sans-serif'
+  typst:
+    fig-format: png
+    mainfont: "Helvetica Neue"
+execute:
+  echo: false
+  warning: true
+# In Quarto, messages follow the warning setting unless set here; this hides
+# informational messages (such as sf's version note) while warnings still show
+knitr:
+  opts_chunk:
+    message: false
+---
+
+```{r}
+# Setup
+options(tidyverse.quiet = TRUE)
+library(tidyverse)
+library(sf)
+library(ggrepel)
+
+# My project's colors, fonts, and theme (a copy of design_brief/theme_project.R)
+source("theme_project.R")
+
+# Built by code/04_build_map_data.Rmd from NCSL, LegiScan, and Census files
+passage <- read_csv("state_ai_passage.csv", show_col_types = FALSE)
+states  <- st_read("us_states_map.gpkg", quiet = TRUE)
+```
+
+```{r}
+# Step 1: in each state, the share of AI bills that became law, the share of all bills,
+# and the gap between them in percentage points
+passage <- passage %>%
+  mutate(ai_rate  = ai_enacted / ai_bills,
+         all_rate = all_enacted / all_bills,
+         gap      = round(100 * (ai_rate - all_rate)))
+
+# Step 2: if AI bills passed at the state's usual rate, how surprising is the number
+# that did? An exact binomial test gives a p-value for each state
+passage <- passage %>%
+  rowwise() %>%
+  mutate(p_value = binom.test(ai_enacted, ai_bills, all_rate)$p.value) %>%
+  ungroup()
+
+# Step 3: four groups. Only states with at least 30 AI bills are tested, and a state
+# is colored only if the difference is unlikely to be chance (p < 0.05)
+passage <- passage %>%
+  mutate(group = case_when(
+           ai_bills < 30      ~ "Fewer than 30 AI bills",
+           p_value >= 0.05    ~ "No clear difference",
+           ai_rate < all_rate ~ "AI bills less likely to pass",
+           TRUE               ~ "AI bills more likely to pass"),
+         group = factor(group, levels = c("AI bills less likely to pass", "No clear difference",
+                                          "AI bills more likely to pass", "Fewer than 30 AI bills")))
+
+# Step 4: the label for each state: its abbreviation, plus the gap if it was tested
+# (with a plus sign or a real minus sign)
+passage <- passage %>%
+  mutate(gap_text = case_when(gap > 0 ~ paste0("+", gap),
+                              gap < 0 ~ paste0("\u2212", abs(gap)),
+                              TRUE    ~ "0"),
+         label = if_else(ai_bills >= 30, paste0(state, "\n", gap_text), state),
+         # Tennessee is too narrow for two lines, so its label goes on one line
+         label = if_else(state == "TN", paste(state, gap_text), label))
+
+map_data <- states %>%
+  left_join(passage, by = "state")
+
+# Step 5: where each label goes. Use a point inside each state's largest piece of land
+# (so Michigan's label sits on its lower peninsula, not the upper one)
+# A state's name is the same for every piece of it, so tell sf that the state column
+# is constant; sf then splits the shapes without warning that attributes might differ
+label_spots <- map_data %>%
+  select(state) %>%
+  st_set_agr("constant") %>%
+  st_cast("POLYGON") %>%
+  mutate(area = as.numeric(st_area(.))) %>%
+  group_by(state) %>%
+  filter(area == max(area)) %>%
+  ungroup() %>%
+  st_set_agr("constant") %>%
+  st_point_on_surface() %>%
+  left_join(select(passage, state, group, label), by = "state")
+
+labels <- label_spots %>%
+  mutate(x = st_coordinates(label_spots)[, 1],
+         y = st_coordinates(label_spots)[, 2],
+         # Move Louisiana's label about 30 km north, into the wide upper part of the state
+         x = if_else(state == "LA", x + 10000, x),
+         y = if_else(state == "LA", y + 30000, y)) %>%
+  st_drop_geometry()
+
+# States too small for a label inside get a line out to the side of the map
+small_states <- c("VT", "NH", "MA", "RI", "CT", "NJ", "DE", "MD", "DC", "HI")
+map_box      <- st_bbox(states)
+on_state     <- filter(labels, !state %in% small_states)
+off_east     <- filter(labels, state %in% small_states, state != "HI")
+off_west     <- filter(labels, state == "HI")
+
+pct <- function(x, accuracy = 1) scales::percent(x, accuracy = accuracy)
+
+# Numbers quoted in the text
+national_ai   <- sum(passage$ai_enacted) / sum(passage$ai_bills)
+national_all  <- sum(passage$all_enacted) / sum(passage$all_bills)
+national_test <- binom.test(sum(passage$ai_enacted), sum(passage$ai_bills), national_all)
+tested        <- filter(passage, ai_bills >= 30)
+less          <- filter(passage, group == "AI bills less likely to pass") %>% arrange(p_value)
+more          <- filter(passage, group == "AI bills more likely to pass") %>% arrange(p_value)
+get_state     <- function(s) filter(passage, state == s)
+# Each percentage with the number of bills behind it (design brief, convention 1)
+pair <- function(s) {
+  x <- get_state(s)
+  paste0(pct(x$ai_rate), " of ", x$ai_bills, " AI bills vs. ", pct(x$all_rate), " of ",
+         scales::comma(x$all_bills), " bills")
+}
+```
+
+```{r}
+#| fig-width: 10
+#| fig-height: 6.4
+#| fig-alt: "Map of U.S. states comparing the share of AI bills that became law in 2025 and 2026 with the share of all bills that became law. Nationally the two are about the same, 17 and 16 percent. Four Southern states pass AI bills much less often than their other bills: Tennessee 20 vs. 44 percent, Virginia 21 vs. 39, Georgia 10 vs. 25, and Louisiana 33 vs. 55. Four states pass AI bills more often: California 52 vs. 43, Connecticut 23 vs. 8, Minnesota 7 vs. 1, and Missouri 9 vs. 3. Each tested state is labeled with the gap in percentage points, from Tennessee at minus 24 to Connecticut at plus 15. Most other states show no clear difference, and 20 states had fewer than 30 AI bills."
+
+passage_map <- ggplot() +
+  # States shaded by group
+  geom_sf(data = map_data, aes(fill = group), colour = "white", linewidth = 0.4) +
+  # Labels inside the states: white on the colored states, dark ink on the others
+  geom_text(data = on_state, aes(x = x, y = y, label = label),
+            family = proj_font, size = size_annotation, lineheight = 0.9,
+            colour = if_else(on_state$group %in% c("AI bills less likely to pass",
+                                                   "AI bills more likely to pass"),
+                             "white", proj_colors[["ink"]])) +
+  # Small states: a line out to a column beside the map (Northeast to the right, Hawaii to the left)
+  geom_text_repel(data = off_east, aes(x = x, y = y, label = str_replace(label, "\n", "  ")),
+                  xlim = c(map_box[["xmax"]] + 150000, NA), direction = "y", hjust = 0,
+                  family = proj_font, size = size_annotation, colour = proj_colors[["ink"]],
+                  min.segment.length = 0, segment.colour = proj_colors[["ink_soft"]],
+                  segment.size = 0.3, max.overlaps = Inf, seed = 1) +
+  geom_text_repel(data = off_west, aes(x = x, y = y, label = str_replace(label, "\n", "  ")),
+                  xlim = c(NA, map_box[["xmin"]] - 100000), hjust = 1,
+                  family = proj_font, size = size_annotation, colour = proj_colors[["ink"]],
+                  min.segment.length = 0, segment.colour = proj_colors[["ink_soft"]],
+                  segment.size = 0.3, seed = 1) +
+  # Two hues for the two directions; light gray-purple = no clear difference; gray = not tested
+  scale_fill_manual(values = c("AI bills less likely to pass" = "#B9893A",
+                               "No clear difference"          = "#E6E3EC",
+                               "AI bills more likely to pass" = "#7E4F8A",
+                               "Fewer than 30 AI bills"       = proj_colors[["context"]]),
+                    name = NULL, drop = FALSE) +
+  # Widen the map on both sides to make room for the labels outside it
+  coord_sf(crs = st_crs(states), datum = NA,
+           xlim = c(map_box[["xmin"]] - 700000, map_box[["xmax"]] + 1000000)) +
+  labs(title = "AI bills pass about as often as other bills, except in four Southern states",
+       subtitle = paste0("Share of AI bills enacted vs. share of all bills enacted, 2025–2026 state legislative sessions\n",
+                         "Nationally: ", pct(national_ai), " of AI bills and ", pct(national_all),
+                         " of all bills became law.\nNumber on each tested state: its AI share minus its share for all bills, in percentage points (for example, 20% \u2212 44% = \u221224 points)"),
+       x = NULL, y = NULL,
+       caption = "Colored states: the AI share differs from the state's share for all bills in an exact binomial test (p < 0.05). States with fewer than 30 AI bills are not tested.\nAI bills: NCSL AI Legislation Database; a bill carried over from 2025 to 2026 counts once. All bills: LegiScan, 2025–2026 regular sessions.\nBoth leave out resolutions, memorials, honorary measures, and local bills. Some 2026 sessions were still open.\nSource: National Conference of State Legislatures (saved November 10, 2026); LegiScan API by LegiScan LLC, CC BY 4.0; Census Bureau boundaries, 2023.") +
+  theme_project(grid = "none") +
+  theme(axis.text = element_blank())
+
+# Show the plot in the rendered document
+passage_map
+
+# Also save it as a PNG for the project README on GitHub
+if (!dir.exists("figures")) dir.create("figures")
+ggsave("figures/viz3_ai_bill_passage.png", passage_map,
+       width = 10, height = 6.4, dpi = 300, bg = "white")
+```
+
+## What the figure shows
+
+My project asks who builds the artificial intelligence (AI) that federal agencies use. Its federal data, the AI use case inventories agencies report to the Office of Management and Budget (OMB), record no locations, so for this exercise I turned to a related question that does: how state legislatures handle AI. Every state considered AI bills in 2025 and 2026, and Washington has argued over whether federal rules should override them. A count of AI laws would mostly show which legislatures pass many bills of any kind, so this map asks whether a state's AI bills are more or less likely to become law than its other bills.
+
+**Units.** The *AI share* is the AI bills that became law divided by all AI bills introduced in the state's 2025 and 2026 sessions (from the National Conference of State Legislatures, NCSL). The *all-bill share* is the same for every bill in those sessions (from LegiScan). The number on each state is the AI share minus the all-bill share, in percentage points: Tennessee's −24 means 20% of its AI bills passed, against 44% of all its bills. States with at least 30 AI bills are tested with an exact binomial test, which asks how likely a gap this large would be if AI bills passed at the state's usual rate. A state is colored when that probability (the p-value) is below 5%.
+
+**Main takeaway.** Nationally, AI bills are about as likely to pass as other bills: `r pct(national_ai, 0.1)` of AI bills became law, against `r pct(national_all, 0.1)` of all bills (a difference that could be chance, p = `r signif(national_test$p.value, 2)`). The exceptions are in the South. In four states, AI bills passed at only 40% to 60% of the usual rate: Tennessee (`r pair("TN")`), Virginia (`r pair("VA")`), Louisiana (`r pair("LA")`), and Georgia (`r pair("GA")`). These legislatures pass more of their bills than most states, but held AI bills back. Four states went the other way: California (`r pair("CA")`), Connecticut (`r pair("CT")`), Missouri (`r pair("MO")`), and Minnesota (`r pair("MN")`).
+
+**What the map adds.** A table would list the same rates, but only the map shows that the states holding AI bills back sit next to one another in one region, while the states moving them faster are scattered across the country.
+
+**How to read this carefully.** The map shows whether AI bills passed, not how strict they were or why they failed. Minnesota needs caution: it passes most legislation in a few large omnibus bills, so only `r pct(get_state("MN")$all_rate)` of its separate bills become law, and almost any subject looks favored there. With `r nrow(tested)` states tested, one or two could differ by chance alone; eight do. Some 2026 sessions were still open, so the shares can still change.
+
+**The numbers behind the map.** The table gives both shares and the counts behind them for every tested state, from the largest shortfall to the largest surplus.
+
+```{r}
+# Both shares for every tested state, with the gap and the test result
+tested %>%
+  arrange(gap) %>%
+  transmute(State = state,
+            `AI bills` = scales::comma(ai_bills),
+            `AI share enacted` = pct(ai_rate),
+            `All bills` = scales::comma(all_bills),
+            `All-bill share enacted` = pct(all_rate),
+            `Gap (points)` = gap_text,
+            `Differs (p < 0.05)` = if_else(p_value < 0.05, "Yes", "")) %>%
+  knitr::kable(align = "lrrrrrc")
+```
+
+**Data notes.** The data cover `r scales::comma(sum(passage$ai_bills))` AI bills and `r scales::comma(sum(passage$all_bills))` bills in all, in the 50 states and DC. NCSL's database has no download option, so its search results were saved from a browser on November 10, 2026; LegiScan's data come from its free API. Both sides were cleaned the same way: a bill carried over from 2025 to 2026 counts once, and resolutions, honorary measures, and local bills are left out, because they cannot become law or pass almost automatically. The cleaning matters. South Carolina numbers its honorary resolutions like bills, and before they were removed it appeared to hold AI bills back; afterward its two shares were the same (`r pct(get_state("SC")$ai_rate)` and `r pct(get_state("SC")$all_rate)`). These rules rely on set phrases in titles and descriptions, so a few measures may be misclassified. The map uses an equal-area (Albers) projection, with Alaska and Hawaii moved below the lower 48. Sources: NCSL Artificial Intelligence Legislation Database, <https://www.ncsl.org/financial-services/artificial-intelligence-legislation-database>; LegiScan API by LegiScan LLC, CC BY 4.0, <https://legiscan.com>; U.S. Census Bureau cartographic boundary files (2023). The data are built in `code/04_build_map_data.Rmd`.
+
+**Design brief.** The figure sources my theme script and follows the brief's typography (one typeface; title, subtitle, labels, and caption at the brief's sizes), its first two conventions (every percentage in the text shows its count, groups under 30 are not tested, and color shows one variable), and its rule for excluded values (untested states are gray and labeled). Teal is not used, as the feedback on the brief asked; conventions 3 to 6 cover the OMB data and do not apply. Four things differ, for these reasons:
+
+1. **Data outside the project.** The OMB inventories have no locations, and the exercise allows other policy data in that case.
+2. **Two new hues.** None of the brief's colors (blue for in-house, coral for vendor, teal for the AI itself) can stand for a state legislature without a false meaning, and a result with two directions needs two hues. Ochre and purple stay distinct in the brief's color-blindness test. Because purple can suggest "swing states" on a U.S. map, the legend names each color's meaning.
+3. **White labels on the ochre and purple states**, where the brief's dark ink would be hard to read.
+4. **No counts on the map labels.** There is no room for counts inside a state, so they are in the table below the map.
+
+## AI use disclosure
+
+**Tool.** Claude Opus 5.5, used through Claude Code.
+
+**Prompts** (paraphrased): compare each state's AI-bill passage rate with its passage rate for all bills; check whether local bills explain the Southern pattern; label every state with its abbreviation and one number, with the unit given once; keep the code simple; follow my design brief and explain any differences; fix the warnings instead of hiding them.
+
+**What Claude did.** Wrote the NCSL parser and the LegiScan download and cleaning in `code/04_build_map_data.Rmd`, the data steps and ggplot code in this document using my theme script, and a first draft of the text.
+
+**What I changed.** I chose the baseline, each state's own passage rate, which fixed a first version where New York looked low only because it passes few bills of any kind. The local-bill check I asked for removed South Carolina, which had looked different only because of its honorary resolutions. I also asked for one number per state instead of two percentages, and for simpler labeling code that I can explain.
+
+**What I checked.** I ran the document chunk by chunk and checked the numbers in the text against what the code prints, for example `r pct(national_ai, 0.1)` of AI bills and `r pct(national_all, 0.1)` of all bills nationally, and Tennessee at `r pair("TN")`.

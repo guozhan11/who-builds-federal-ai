@@ -1,7 +1,7 @@
 .DS_Store
 .Rhistory
 ~$*
-data/raw/
+data/raw
 *.html
 
 # r_viz: course instructions, walkthrough scripts, and each exercise's data copy stay local
@@ -13,3 +13,18 @@ r_viz/*/ai_use_cases.csv
 design_brief/Design Brief Assignment Instructions Fall 2026.docx
 design_brief/video/
 design_brief/ai_use_cases.csv
+
+# Instructor feedback stays local
+feedback/
+
+# Course materials stay local: assignment instructions and lecture slides
+interactive_brief/Interactive Brief Instructions Fall 2026.docx
+final_project/Final Project Instructions Fall 2026.docx
+reference/
+
+# Spoken scripts stay local, like the walkthrough scripts above
+final_project/presentation_script.md
+
+# Build and deployment files: Quarto's cache and the shinyapps.io deployment record
+.quarto/
+rsconnect/
